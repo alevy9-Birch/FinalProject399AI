@@ -246,7 +246,27 @@ func _spawn_ore_deposits(mission: Dictionary, macro: FastNoiseLite, ridge: FastN
 		ore.set("ore_value", rng.randi_range(yield_range.x, max(yield_range.x, yield_range.y)))
 		ore.position = surface_point
 		ore.add_to_group("ore_deposit")
+		ore.add_child(_make_ore_visual(rng))
 		_ore_root.add_child(ore)
+
+
+func _make_ore_visual(rng: RandomNumberGenerator) -> MeshInstance3D:
+	var ore_mesh := MeshInstance3D.new()
+	var crystal := CylinderMesh.new()
+	crystal.top_radius = 0.03
+	crystal.bottom_radius = rng.randf_range(0.12, 0.18)
+	crystal.height = rng.randf_range(0.8, 1.6)
+	crystal.radial_segments = 6
+	ore_mesh.mesh = crystal
+	ore_mesh.position = Vector3(0, crystal.height * 0.5 + 0.1, 0)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.92, 0.84, 0.2, 1.0)
+	mat.emission_enabled = true
+	mat.emission = Color(0.9, 0.72, 0.1, 1.0)
+	mat.emission_energy_multiplier = 0.8
+	mat.roughness = 0.18
+	ore_mesh.material_override = mat
+	return ore_mesh
 
 
 func _build_prop(prop_profile: int, rng: RandomNumberGenerator) -> Node3D:
@@ -261,6 +281,10 @@ func _build_prop(prop_profile: int, rng: RandomNumberGenerator) -> Node3D:
 			return _make_tree(rng)
 		4:
 			return _make_ice_spike(rng)
+		5:
+			return _make_basalt_column(rng)
+		6:
+			return _make_fungal_bloom(rng)
 		_:
 			return _make_rock_cluster(rng)
 
@@ -336,6 +360,50 @@ func _make_ice_spike(rng: RandomNumberGenerator) -> Node3D:
 	return mesh
 
 
+func _make_basalt_column(rng: RandomNumberGenerator) -> Node3D:
+	var root := Node3D.new()
+	var count: int = rng.randi_range(2, 4)
+	for i in range(count):
+		var col := MeshInstance3D.new()
+		var mesh := CylinderMesh.new()
+		mesh.top_radius = rng.randf_range(0.08, 0.16)
+		mesh.bottom_radius = mesh.top_radius * rng.randf_range(1.05, 1.22)
+		mesh.height = rng.randf_range(1.2, 3.6)
+		mesh.radial_segments = 6
+		col.mesh = mesh
+		col.position = Vector3(rng.randf_range(-0.35, 0.35), mesh.height * 0.5, rng.randf_range(-0.35, 0.35))
+		col.material_override = _make_prop_material(Color(0.18, 0.18, 0.2, 1.0), 0.95, 0.05)
+		root.add_child(col)
+	return root
+
+
+func _make_fungal_bloom(rng: RandomNumberGenerator) -> Node3D:
+	var root := Node3D.new()
+	var stalk := MeshInstance3D.new()
+	var stalk_mesh := CylinderMesh.new()
+	stalk_mesh.top_radius = 0.09
+	stalk_mesh.bottom_radius = 0.12
+	stalk_mesh.height = rng.randf_range(0.9, 1.8)
+	stalk.mesh = stalk_mesh
+	stalk.position = Vector3(0, stalk_mesh.height * 0.5, 0)
+	stalk.material_override = _make_prop_material(Color(0.22, 0.6, 0.36, 1.0), 0.72, 0.0)
+	root.add_child(stalk)
+	var cap := MeshInstance3D.new()
+	var cap_mesh := SphereMesh.new()
+	cap_mesh.radius = rng.randf_range(0.35, 0.7)
+	cap_mesh.height = cap_mesh.radius * 1.2
+	cap.mesh = cap_mesh
+	cap.position = Vector3(0, stalk_mesh.height + cap_mesh.height * 0.3, 0)
+	var cap_color := Color(0.4, 0.9, 0.48, 1.0) if rng.randf() < 0.5 else Color(0.8, 0.28, 0.86, 1.0)
+	var cap_mat := _make_prop_material(cap_color, 0.25, 0.05)
+	cap_mat.emission_enabled = true
+	cap_mat.emission = cap_color * 0.35
+	cap_mat.emission_energy_multiplier = 0.55
+	cap.material_override = cap_mat
+	root.add_child(cap)
+	return root
+
+
 func _make_prop_material(color: Color, roughness: float, metallic: float) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
@@ -348,20 +416,73 @@ func _apply_surface_material(mission: Dictionary) -> void:
 	var base: StandardMaterial3D = _mesh_instance.material_override as StandardMaterial3D
 	var mat: StandardMaterial3D = base.duplicate() as StandardMaterial3D if base != null else StandardMaterial3D.new()
 	var planet_type: int = int(mission.get("planet_type", 0))
+	var mission_seed: int = int(mission.get("mission_seed", 1))
+	var tex_frequency: float = 0.07
+	var tex_contrast: float = 1.0
+	var tex_scale: Vector3 = Vector3(18.0, 18.0, 18.0)
 	match planet_type:
 		0:
 			mat.albedo_color = Color(0.41, 0.36, 0.32, 1.0)
+			tex_frequency = 0.095
+			tex_contrast = 1.28
+			tex_scale = Vector3(13.0, 13.0, 13.0)
 		1:
 			mat.albedo_color = Color(0.5, 0.47, 0.42, 1.0)
+			tex_frequency = 0.065
+			tex_contrast = 1.1
+			tex_scale = Vector3(17.0, 17.0, 17.0)
 		2:
 			mat.albedo_color = Color(0.52, 0.54, 0.58, 1.0)
 			mat.metallic = 0.2
+			tex_frequency = 0.11
+			tex_contrast = 1.45
+			tex_scale = Vector3(11.5, 11.5, 11.5)
 		3:
 			mat.albedo_color = Color(0.45, 0.27, 0.2, 1.0)
+			tex_frequency = 0.12
+			tex_contrast = 1.55
+			tex_scale = Vector3(11.0, 11.0, 11.0)
 		4:
 			mat.albedo_color = Color(0.76, 0.84, 0.88, 1.0)
+			tex_frequency = 0.055
+			tex_contrast = 0.95
+			tex_scale = Vector3(21.0, 21.0, 21.0)
 		5:
 			mat.albedo_color = Color(0.3, 0.44, 0.31, 1.0)
+			tex_frequency = 0.082
+			tex_contrast = 1.22
+			tex_scale = Vector3(14.0, 14.0, 14.0)
+		6:
+			mat.albedo_color = Color(0.72, 0.58, 0.36, 1.0)
+			tex_frequency = 0.07
+			tex_contrast = 1.18
+			tex_scale = Vector3(18.0, 18.0, 18.0)
+		7:
+			mat.albedo_color = Color(0.24, 0.43, 0.28, 1.0)
+			tex_frequency = 0.1
+			tex_contrast = 1.35
+			tex_scale = Vector3(12.5, 12.5, 12.5)
+	var tex_noise := FastNoiseLite.new()
+	tex_noise.seed = mission_seed + 808
+	tex_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX
+	tex_noise.frequency = tex_frequency
+	tex_noise.fractal_octaves = 4
+	tex_noise.fractal_lacunarity = 2.05
+	tex_noise.fractal_gain = 0.52
+	var tex := NoiseTexture2D.new()
+	tex.seamless = true
+	tex.width = 1024
+	tex.height = 1024
+	tex.normalize = false
+	tex.in_3d_space = true
+	tex.as_normal_map = false
+	tex.generate_mipmaps = true
+	tex.noise = tex_noise
+	mat.albedo_texture = tex
+	mat.albedo_texture_force_srgb = true
+	mat.uv1_triplanar = true
+	mat.uv1_scale = tex_scale
+	mat.roughness = clampf(0.82 + 0.08 * tex_contrast, 0.78, 0.96)
 	_mesh_instance.material_override = mat
 
 

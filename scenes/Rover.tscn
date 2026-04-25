@@ -393,6 +393,22 @@ rotation = Vector3(0, 0, 1.5708)
 mesh = SubResource("CylinderMesh_wheel")
 material_override = SubResource("StandardMaterial3D_wheel")
 
+[node name="MidLeftWheelPivot" type="Node3D" parent="WheelVisuals"]
+position = Vector3(-0.95, -0.82, 0)
+
+[node name="MidLeftWheel" type="MeshInstance3D" parent="WheelVisuals/MidLeftWheelPivot"]
+rotation = Vector3(0, 0, 1.5708)
+mesh = SubResource("CylinderMesh_wheel")
+material_override = SubResource("StandardMaterial3D_wheel")
+
+[node name="MidRightWheelPivot" type="Node3D" parent="WheelVisuals"]
+position = Vector3(0.95, -0.82, 0)
+
+[node name="MidRightWheel" type="MeshInstance3D" parent="WheelVisuals/MidRightWheelPivot"]
+rotation = Vector3(0, 0, 1.5708)
+mesh = SubResource("CylinderMesh_wheel")
+material_override = SubResource("StandardMaterial3D_wheel")
+
 [node name="GroundRays" type="Node3D" parent="."]
 
 [node name="FrontLeftRay" type="RayCast3D" parent="GroundRays"]
@@ -409,6 +425,14 @@ target_position = Vector3(0, -0.95, 0)
 
 [node name="BackRightRay" type="RayCast3D" parent="GroundRays"]
 position = Vector3(0.95, -0.2, 1.2)
+target_position = Vector3(0, -0.95, 0)
+
+[node name="MidLeftRay" type="RayCast3D" parent="GroundRays"]
+position = Vector3(-0.95, -0.2, 0)
+target_position = Vector3(0, -0.95, 0)
+
+[node name="MidRightRay" type="RayCast3D" parent="GroundRays"]
+position = Vector3(0.95, -0.2, 0)
 target_position = Vector3(0, -0.95, 0)
 
 [node name="CameraRig" type="Node3D" parent="."]

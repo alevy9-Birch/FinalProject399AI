@@ -1,8 +1,9 @@
-[gd_scene load_steps=9 format=3 uid="uid://b4oo7f86s7gd4"]
+[gd_scene load_steps=10 format=3 uid="uid://b4oo7f86s7gd4"]
 
 [ext_resource type="PackedScene" path="res://scenes/Rover.tscn" id="1_e0nrl"]
 [ext_resource type="Script" path="res://scripts/debug_overlay.gd" id="2_qruo7"]
 [ext_resource type="Script" path="res://scripts/planet_terrain.gd" id="3_planet"]
+[ext_resource type="Script" path="res://scripts/starfield.gd" id="4_star"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 sky_top_color = Color(0.01, 0.01, 0.03, 1)
@@ -47,6 +48,9 @@ environment = SubResource("Environment_q11xf")
 transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 0, 0)
 light_energy = 1.35
 shadow_enabled = true
+
+[node name="Starfield" type="Node3D" parent="."]
+script = ExtResource("4_star")
 
 [node name="Planet" type="StaticBody3D" parent="." groups=["gravity_source"]]
 collision_layer = 1
@@ -104,3 +108,94 @@ offset_right = 264.0
 offset_bottom = 56.0
 max_value = 1.0
 value = 1.0
+
+[node name="PowerPanel" type="Panel" parent="HUD"]
+offset_left = 18.0
+offset_top = 248.0
+offset_right = 300.0
+offset_bottom = 312.0
+
+[node name="PowerLabel" type="Label" parent="HUD/PowerPanel"]
+offset_left = 10.0
+offset_top = 8.0
+offset_right = 220.0
+offset_bottom = 28.0
+text = "Battery Power"
+
+[node name="PowerBar" type="ProgressBar" parent="HUD/PowerPanel"]
+offset_left = 10.0
+offset_top = 32.0
+offset_right = 264.0
+offset_bottom = 56.0
+max_value = 1.0
+value = 1.0
+
+[node name="StatusPanel" type="Panel" parent="HUD"]
+offset_left = 18.0
+offset_top = 92.0
+offset_right = 360.0
+offset_bottom = 242.0
+
+[node name="ScoreLabel" type="Label" parent="HUD/StatusPanel"]
+offset_left = 10.0
+offset_top = 8.0
+offset_right = 320.0
+offset_bottom = 28.0
+text = "Score: 0 ore"
+
+[node name="OreDistanceLabel" type="Label" parent="HUD/StatusPanel"]
+offset_left = 10.0
+offset_top = 34.0
+offset_right = 330.0
+offset_bottom = 54.0
+text = "Closest Ore: --"
+
+[node name="RadarStateLabel" type="Label" parent="HUD/StatusPanel"]
+offset_left = 10.0
+offset_top = 60.0
+offset_right = 330.0
+offset_bottom = 80.0
+text = "Radar: scanning..."
+
+[node name="MiningPromptLabel" type="Label" parent="HUD/StatusPanel"]
+offset_left = 10.0
+offset_top = 86.0
+offset_right = 330.0
+offset_bottom = 106.0
+text = "Mining: Move closer and press G"
+
+[node name="OreDirectionLabel" type="Label" parent="HUD/StatusPanel"]
+offset_left = 10.0
+offset_top = 106.0
+offset_right = 330.0
+offset_bottom = 126.0
+text = "Ore Direction: --"
+
+[node name="SpeedLabel" type="Label" parent="HUD/StatusPanel"]
+offset_left = 10.0
+offset_top = 126.0
+offset_right = 330.0
+offset_bottom = 146.0
+text = "Speed: 0.0 m/s"
+
+[node name="WeaponLabel" type="Label" parent="HUD/StatusPanel"]
+offset_left = 10.0
+offset_top = 146.0
+offset_right = 330.0
+offset_bottom = 166.0
+text = "Weapon: None"
+
+[node name="Crosshair" type="Label" parent="HUD"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -16.0
+offset_right = 8.0
+offset_bottom = 16.0
+theme_override_font_sizes/font_size = 28
+text = "+"
+horizontal_alignment = 1

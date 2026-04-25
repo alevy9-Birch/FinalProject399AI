@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://cm2cxhpk2b2d3"]
+[gd_scene load_steps=4 format=3 uid="uid://cm2cxhpk2b2d3"]
 
 [ext_resource type="Script" path="res://scripts/customization_menu.gd" id="1_custom"]
 
@@ -8,18 +8,6 @@ corner_radius_top_left = 12
 corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tech_slot"]
-bg_color = Color(0.03, 0.11, 0.17, 0.95)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.1, 0.9, 0.98, 0.95)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
 
 [sub_resource type="Environment" id="Environment_v0x8w"]
 background_mode = 0
@@ -45,188 +33,284 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.03, 0.04, 0.07, 1)
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Panel" type="Panel" parent="CenterContainer"]
-custom_minimum_size = Vector2(920, 680)
+[node name="Panel" type="Panel" parent="MarginContainer"]
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel"]
+[node name="RootMargin" type="MarginContainer" parent="MarginContainer/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = 24.0
-offset_right = -24.0
-offset_bottom = -24.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RootVBox" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin"]
+layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="CenterContainer/Panel/VBox"]
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="RoversSection" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "Rover Customization"
-horizontal_alignment = 1
+text = "Mission Preparation"
 
-[node name="VariantName" type="Label" parent="CenterContainer/Panel/VBox"]
+[node name="RoversLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
+layout_mode = 2
+text = "Select Chassis"
+
+[node name="VariantName" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "Chassis: Expedition Chassis"
+
+[node name="ChassisCards" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Card0" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ChassisButton0" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card0"]
+custom_minimum_size = Vector2(120, 72)
+layout_mode = 2
+text = "ROVER ICON"
+
+[node name="ChassisName0" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card0"]
+layout_mode = 2
+text = "Scout"
 horizontal_alignment = 1
 
-[node name="ChassisLabel" type="Label" parent="CenterContainer/Panel/VBox"]
-layout_mode = 2
-text = "Chassis"
-
-[node name="ChassisOption" type="OptionButton" parent="CenterContainer/Panel/VBox"]
+[node name="Card1" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ColorLabel" type="Label" parent="CenterContainer/Panel/VBox"]
+[node name="ChassisButton1" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card1"]
+custom_minimum_size = Vector2(120, 72)
 layout_mode = 2
-text = "Primary Frame Color"
+text = "ROVER ICON"
 
-[node name="ColorOption" type="OptionButton" parent="CenterContainer/Panel/VBox"]
+[node name="ChassisName1" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card1"]
+layout_mode = 2
+text = "Expedition"
+horizontal_alignment = 1
+
+[node name="Card2" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="StatsLabel" type="Label" parent="CenterContainer/Panel/VBox"]
+[node name="ChassisButton2" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card2"]
+custom_minimum_size = Vector2(120, 72)
 layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Stats: --"
-autowrap_mode = 2
+text = "ROVER ICON"
 
-[node name="UpgradeSection" type="VBoxContainer" parent="CenterContainer/Panel/VBox"]
+[node name="ChassisName2" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card2"]
+layout_mode = 2
+text = "Juggernaut"
+horizontal_alignment = 1
+
+[node name="UpgradeSection" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow"]
+custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="UpgradeHeader" type="Label" parent="CenterContainer/Panel/VBox/UpgradeSection"]
+[node name="UpgradeHeader" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Component Slots"
+text = "Upgrade Slots"
 
-[node name="UpgradeHint" type="Label" parent="CenterContainer/Panel/VBox/UpgradeSection"]
+[node name="UpgradeHint" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
-text = "Click a tech slot, then choose an upgrade"
+text = "Click slot, then choose component"
 
-[node name="SlotsGrid" type="GridContainer" parent="CenterContainer/Panel/VBox/UpgradeSection"]
+[node name="SlotButtonsGrid" type="GridContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
-columns = 4
+columns = 2
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 
-[node name="SlotButton0" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid"]
-custom_minimum_size = Vector2(120, 72)
+[node name="SlotButton0" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
+custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_tech_slot")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tech_slot")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tech_slot")
 text = "Slot 1"
 
-[node name="SlotButton1" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid"]
-custom_minimum_size = Vector2(120, 72)
+[node name="SlotButton1" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
+custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_tech_slot")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tech_slot")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tech_slot")
 text = "Slot 2"
 
-[node name="SlotButton2" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid"]
-custom_minimum_size = Vector2(120, 72)
+[node name="SlotButton2" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
+custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_tech_slot")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tech_slot")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tech_slot")
 text = "Slot 3"
 
-[node name="SlotButton3" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid"]
-custom_minimum_size = Vector2(120, 72)
+[node name="SlotButton3" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
+custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
-theme_override_styles/normal = SubResource("StyleBoxFlat_tech_slot")
-theme_override_styles/hover = SubResource("StyleBoxFlat_tech_slot")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_tech_slot")
 text = "Slot 4"
 
-[node name="UpgradePickerRow" type="HBoxContainer" parent="CenterContainer/Panel/VBox/UpgradeSection"]
+[node name="SlotPickerRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
-[node name="SelectedSlotLabel" type="Label" parent="CenterContainer/Panel/VBox/UpgradeSection/UpgradePickerRow"]
-custom_minimum_size = Vector2(180, 0)
+[node name="SelectedSlotLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow"]
 layout_mode = 2
-text = "Selected Slot: 1"
+text = "Slot 1"
 
-[node name="UpgradeOption" type="OptionButton" parent="CenterContainer/Panel/VBox/UpgradeSection/UpgradePickerRow"]
+[node name="SlotUpgradeOption" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="ApplyUpgradeButton" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/UpgradePickerRow"]
+[node name="UpgradeEffects" type="RichTextLabel" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
+custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
-text = "Equip"
+bbcode_enabled = true
+fit_content = true
+text = "Upgrade effects..."
 
-[node name="PreviewContainer" type="PanelContainer" parent="CenterContainer/Panel/VBox"]
-custom_minimum_size = Vector2(700, 330)
+[node name="BottomRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="StatsSection" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="StatsTitle" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+layout_mode = 2
+text = "Rover Stats"
+
+[node name="SpeedBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+max_value = 1.0
+value = 0.5
+
+[node name="DriveBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+max_value = 1.0
+value = 0.5
+
+[node name="TurnBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+max_value = 1.0
+value = 0.5
+
+[node name="FuelBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+max_value = 1.0
+value = 0.5
+
+[node name="PowerBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+custom_minimum_size = Vector2(0, 26)
+layout_mode = 2
+max_value = 1.0
+value = 0.5
+
+[node name="StatsSummary" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+layout_mode = 2
+autowrap_mode = 2
+text = "Stats summary"
+
+[node name="PreviewSection" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="PreviewContainer" type="PanelContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection"]
+custom_minimum_size = Vector2(520, 300)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="SubViewportContainer" type="SubViewportContainer" parent="CenterContainer/Panel/VBox/PreviewContainer"]
+[node name="SubViewportContainer" type="SubViewportContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer"]
+[node name="SubViewport" type="SubViewport" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer"]
 transparent_bg = false
 handle_input_locally = false
 size = Vector2i(1024, 512)
 render_target_update_mode = 4
 
-[node name="PreviewRoot" type="Node3D" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport"]
+[node name="PreviewRoot" type="Node3D" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport"]
 
-[node name="PreviewLight" type="DirectionalLight3D" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
+[node name="PreviewLight" type="DirectionalLight3D" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
 transform = Transform3D(0.819152, -0.219846, 0.529919, 0, 0.92388, 0.382683, -0.573576, -0.313476, 0.757696, 0, 0, 0)
 light_energy = 1.5
 
-[node name="PreviewAmbient" type="WorldEnvironment" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
+[node name="PreviewAmbient" type="WorldEnvironment" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
 environment = SubResource("Environment_v0x8w")
 
-[node name="PreviewFill" type="OmniLight3D" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
+[node name="PreviewFill" type="OmniLight3D" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.1, 1.5)
 light_energy = 0.65
 omni_range = 12.0
 
-[node name="PreviewCamera" type="Camera3D" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
+[node name="PreviewCamera" type="Camera3D" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
 transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 2.8, 8.6)
 current = true
 
-[node name="Buttons" type="HBoxContainer" parent="CenterContainer/Panel/VBox"]
+[node name="ControlRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="BackButton" type="Button" parent="CenterContainer/Panel/VBox/Buttons"]
+[node name="BackButton" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Back to Main Menu"
+text = "Back"
 
-[node name="StartButton" type="Button" parent="CenterContainer/Panel/VBox/Buttons"]
+[node name="ColorOption" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Start Game"
 
-[connection signal="item_selected" from="CenterContainer/Panel/VBox/ColorOption" to="." method="_on_color_option_item_selected"]
-[connection signal="item_selected" from="CenterContainer/Panel/VBox/ChassisOption" to="." method="_on_chassis_option_item_selected"]
-[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid/SlotButton0" to="." method="_on_slot_button_pressed" binds= [0]]
-[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid/SlotButton1" to="." method="_on_slot_button_pressed" binds= [1]]
-[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid/SlotButton2" to="." method="_on_slot_button_pressed" binds= [2]]
-[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid/SlotButton3" to="." method="_on_slot_button_pressed" binds= [3]]
-[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/UpgradePickerRow/ApplyUpgradeButton" to="." method="_on_apply_upgrade_button_pressed"]
-[connection signal="pressed" from="CenterContainer/Panel/VBox/Buttons/BackButton" to="." method="_on_back_button_pressed"]
-[connection signal="pressed" from="CenterContainer/Panel/VBox/Buttons/StartButton" to="." method="_on_start_button_pressed"]
+[node name="StartButton" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Mission"
+
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card0/ChassisButton0" to="." method="_on_chassis_card_pressed" binds= [0]]
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card1/ChassisButton1" to="." method="_on_chassis_card_pressed" binds= [1]]
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card2/ChassisButton2" to="." method="_on_chassis_card_pressed" binds= [2]]
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton0" to="." method="_on_slot_button_pressed" binds= [0]]
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton1" to="." method="_on_slot_button_pressed" binds= [1]]
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton2" to="." method="_on_slot_button_pressed" binds= [2]]
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton3" to="." method="_on_slot_button_pressed" binds= [3]]
+[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow/SlotUpgradeOption" to="." method="_on_slot_upgrade_option_selected"]
+[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/ColorOption" to="." method="_on_color_option_item_selected"]
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/StartButton" to="." method="_on_start_button_pressed"]

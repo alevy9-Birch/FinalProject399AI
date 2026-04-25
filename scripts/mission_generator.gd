@@ -9,7 +9,9 @@ enum PlanetType {
 	METALLIC_CORE,
 	VOLCANIC_SHARD,
 	ICE_DUSTBALL,
-	HABITABLE_WORLD
+	HABITABLE_WORLD,
+	DESERT_DUNE,
+	TOXIC_SWAMP
 }
 
 enum AlienPresence {
@@ -49,7 +51,9 @@ enum PropProfile {
 	CRYSTAL_FIELD,
 	ANCIENT_RUINS,
 	TREE_GROVES,
-	ICE_SPIKES
+	ICE_SPIKES,
+	BASALT_COLUMNS,
+	FUNGAL_BLOOM
 }
 
 const PLANET_TYPE_NAMES: PackedStringArray = [
@@ -58,7 +62,9 @@ const PLANET_TYPE_NAMES: PackedStringArray = [
 	"Metallic Core",
 	"Volcanic Shard",
 	"Ice Dustball",
-	"Habitable World"
+	"Habitable World",
+	"Desert Dune",
+	"Toxic Swamp"
 ]
 
 const ALIEN_PRESENCE_NAMES: PackedStringArray = [
@@ -98,7 +104,9 @@ const PROP_PROFILE_NAMES: PackedStringArray = [
 	"Crystal Fields",
 	"Ancient Ruins",
 	"Tree Groves",
-	"Ice Spikes"
+	"Ice Spikes",
+	"Basalt Columns",
+	"Fungal Bloom"
 ]
 
 var current_mission: Dictionary = {}
@@ -205,22 +213,30 @@ func _safe_name(names: PackedStringArray, idx: int, fallback: String) -> String:
 
 func _roll_planet_type(rng: RandomNumberGenerator) -> int:
 	var roll: float = rng.randf()
-	if roll < 0.22:
+	if roll < 0.17:
 		return PlanetType.ASTEROID_RUBBLE
-	if roll < 0.42:
+	if roll < 0.31:
 		return PlanetType.CRATERED_MOON
-	if roll < 0.58:
+	if roll < 0.45:
 		return PlanetType.METALLIC_CORE
-	if roll < 0.73:
+	if roll < 0.58:
 		return PlanetType.VOLCANIC_SHARD
-	if roll < 0.88:
+	if roll < 0.70:
 		return PlanetType.ICE_DUSTBALL
-	return PlanetType.HABITABLE_WORLD
+	if roll < 0.82:
+		return PlanetType.HABITABLE_WORLD
+	if roll < 0.92:
+		return PlanetType.DESERT_DUNE
+	return PlanetType.TOXIC_SWAMP
 
 
 func _roll_size_class(rng: RandomNumberGenerator, planet_type: int) -> int:
 	if planet_type == PlanetType.HABITABLE_WORLD:
 		return _pick_weighted(rng, [PlanetSizeClass.MEDIUM, PlanetSizeClass.LARGE, PlanetSizeClass.HUGE], [0.2, 0.5, 0.3])
+	if planet_type == PlanetType.DESERT_DUNE:
+		return _pick_weighted(rng, [PlanetSizeClass.SMALL, PlanetSizeClass.MEDIUM, PlanetSizeClass.LARGE], [0.22, 0.5, 0.28])
+	if planet_type == PlanetType.TOXIC_SWAMP:
+		return _pick_weighted(rng, [PlanetSizeClass.MEDIUM, PlanetSizeClass.LARGE], [0.55, 0.45])
 	if planet_type == PlanetType.ASTEROID_RUBBLE:
 		return _pick_weighted(rng, [PlanetSizeClass.TINY, PlanetSizeClass.SMALL, PlanetSizeClass.MEDIUM], [0.45, 0.4, 0.15])
 	return _pick_weighted(rng, [PlanetSizeClass.SMALL, PlanetSizeClass.MEDIUM, PlanetSizeClass.LARGE], [0.25, 0.55, 0.2])
@@ -238,6 +254,12 @@ func _roll_gravity_class(rng: RandomNumberGenerator, planet_type: int, size_clas
 	if planet_type == PlanetType.METALLIC_CORE:
 		options = [GravityClass.EARTHLIKE, GravityClass.HEAVY_G, GravityClass.CRUSHING]
 		weights = [0.18, 0.55, 0.27]
+	if planet_type == PlanetType.DESERT_DUNE:
+		options = [GravityClass.LOW_G, GravityClass.EARTHLIKE, GravityClass.HEAVY_G]
+		weights = [0.2, 0.5, 0.3]
+	if planet_type == PlanetType.TOXIC_SWAMP:
+		options = [GravityClass.EARTHLIKE, GravityClass.HEAVY_G, GravityClass.CRUSHING]
+		weights = [0.3, 0.52, 0.18]
 	if planet_type == PlanetType.ASTEROID_RUBBLE:
 		options = [GravityClass.MICRO_G, GravityClass.LOW_G, GravityClass.EARTHLIKE]
 		weights = [0.42, 0.43, 0.15]
@@ -249,6 +271,10 @@ func _roll_ore_quantity(rng: RandomNumberGenerator, planet_type: int) -> int:
 		return _pick_weighted(rng, [OreQuantity.STANDARD, OreQuantity.RICH, OreQuantity.BONANZA], [0.25, 0.48, 0.27])
 	if planet_type == PlanetType.ICE_DUSTBALL:
 		return _pick_weighted(rng, [OreQuantity.SCARCE, OreQuantity.PATCHY, OreQuantity.STANDARD], [0.34, 0.46, 0.2])
+	if planet_type == PlanetType.DESERT_DUNE:
+		return _pick_weighted(rng, [OreQuantity.PATCHY, OreQuantity.STANDARD, OreQuantity.RICH], [0.4, 0.43, 0.17])
+	if planet_type == PlanetType.TOXIC_SWAMP:
+		return _pick_weighted(rng, [OreQuantity.STANDARD, OreQuantity.RICH, OreQuantity.BONANZA], [0.3, 0.45, 0.25])
 	return _pick_weighted(rng, [OreQuantity.PATCHY, OreQuantity.STANDARD, OreQuantity.RICH], [0.3, 0.45, 0.25])
 
 
@@ -257,6 +283,8 @@ func _roll_alien_presence(rng: RandomNumberGenerator, planet_type: int) -> int:
 		return _pick_weighted(rng, [AlienPresence.MODERATE, AlienPresence.HEAVY, AlienPresence.OVERWHELMING], [0.2, 0.52, 0.28])
 	if planet_type == PlanetType.HABITABLE_WORLD:
 		return _pick_weighted(rng, [AlienPresence.LOW, AlienPresence.MODERATE, AlienPresence.HEAVY], [0.3, 0.5, 0.2])
+	if planet_type == PlanetType.TOXIC_SWAMP:
+		return _pick_weighted(rng, [AlienPresence.MODERATE, AlienPresence.HEAVY, AlienPresence.OVERWHELMING], [0.22, 0.5, 0.28])
 	return _pick_weighted(rng, [AlienPresence.LOW, AlienPresence.MODERATE, AlienPresence.HEAVY], [0.28, 0.5, 0.22])
 
 
@@ -267,6 +295,12 @@ func _roll_prop_profile(rng: RandomNumberGenerator, planet_type: int) -> int:
 		return _pick_weighted(rng, [PropProfile.ICE_SPIKES, PropProfile.BARREN], [0.75, 0.25])
 	if planet_type == PlanetType.METALLIC_CORE:
 		return _pick_weighted(rng, [PropProfile.CRYSTAL_FIELD, PropProfile.BARREN], [0.7, 0.3])
+	if planet_type == PlanetType.VOLCANIC_SHARD:
+		return _pick_weighted(rng, [PropProfile.BASALT_COLUMNS, PropProfile.CRYSTAL_FIELD], [0.72, 0.28])
+	if planet_type == PlanetType.DESERT_DUNE:
+		return _pick_weighted(rng, [PropProfile.ANCIENT_RUINS, PropProfile.BARREN], [0.68, 0.32])
+	if planet_type == PlanetType.TOXIC_SWAMP:
+		return _pick_weighted(rng, [PropProfile.FUNGAL_BLOOM, PropProfile.ANCIENT_RUINS], [0.78, 0.22])
 	return _pick_weighted(rng, [PropProfile.BARREN, PropProfile.CRYSTAL_FIELD, PropProfile.ANCIENT_RUINS], [0.5, 0.32, 0.18])
 
 
@@ -316,24 +350,28 @@ func _terrain_profile_for_type(rng: RandomNumberGenerator, planet_type: int) -> 
 			return {"macro_height": rng.randf_range(14.0, 25.0), "ridge_height": rng.randf_range(5.0, 10.0), "detail_height": rng.randf_range(0.6, 1.2)}
 		PlanetType.HABITABLE_WORLD:
 			return {"macro_height": rng.randf_range(18.0, 30.0), "ridge_height": rng.randf_range(6.0, 11.0), "detail_height": rng.randf_range(0.7, 1.4)}
+		PlanetType.DESERT_DUNE:
+			return {"macro_height": rng.randf_range(16.0, 26.0), "ridge_height": rng.randf_range(3.0, 8.0), "detail_height": rng.randf_range(0.4, 0.9)}
+		PlanetType.TOXIC_SWAMP:
+			return {"macro_height": rng.randf_range(22.0, 36.0), "ridge_height": rng.randf_range(7.0, 13.0), "detail_height": rng.randf_range(1.6, 2.7)}
 		_:
 			return {"macro_height": 28.0, "ridge_height": 9.0, "detail_height": 1.2}
 
 
 func _ore_count_for_quantity(ore_quantity: int, size_class: int, rng: RandomNumberGenerator) -> int:
-	var base: int = 18 + size_class * 8
+	var base: int = 52 + size_class * 20
 	match ore_quantity:
 		OreQuantity.SCARCE:
-			base -= 9
+			base -= 16
 		OreQuantity.PATCHY:
-			base -= 3
+			base -= 6
 		OreQuantity.STANDARD:
 			base += 0
 		OreQuantity.RICH:
-			base += 10
+			base += 20
 		OreQuantity.BONANZA:
-			base += 18
-	return maxi(6, base + rng.randi_range(-4, 5))
+			base += 36
+	return maxi(24, base + rng.randi_range(-10, 12))
 
 
 func _alien_budget_for_presence(alien_presence: int, size_class: int, rng: RandomNumberGenerator) -> int:
@@ -381,6 +419,10 @@ func _prop_density_for_profile(prop_profile: int, size_class: int, rng: RandomNu
 			return rng.randf_range(0.04, 0.085) * size_factor
 		PropProfile.ICE_SPIKES:
 			return rng.randf_range(0.018, 0.04) * size_factor
+		PropProfile.BASALT_COLUMNS:
+			return rng.randf_range(0.015, 0.032) * size_factor
+		PropProfile.FUNGAL_BLOOM:
+			return rng.randf_range(0.03, 0.07) * size_factor
 		_:
 			return 0.01
 
@@ -392,6 +434,10 @@ func _compute_yelp(ore_quantity: int, alien_presence: int, gravity_class: int, p
 	score -= maxf(0.0, float(gravity_class) - 2.0) * 0.2
 	if planet_type == PlanetType.HABITABLE_WORLD:
 		score += 0.35
+	if planet_type == PlanetType.DESERT_DUNE:
+		score += 0.08
+	if planet_type == PlanetType.TOXIC_SWAMP:
+		score -= 0.22
 	score += rng.randf_range(-0.2, 0.2)
 	score = clampf(score, 1.0, 5.0)
 
@@ -422,6 +468,10 @@ func _generate_planet_name(rng: RandomNumberGenerator, planet_type: int) -> Stri
 			return "%s Frost" % base
 		PlanetType.METALLIC_CORE:
 			return "%s Ferrum" % base
+		PlanetType.DESERT_DUNE:
+			return "%s Dune" % base
+		PlanetType.TOXIC_SWAMP:
+			return "%s Mire" % base
 		_:
 			return base
 
