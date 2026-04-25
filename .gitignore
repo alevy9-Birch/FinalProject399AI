@@ -1,0 +1,11 @@
+# Godot 4+ editor/import cache
+.godot/
+
+# Exported game binaries
+bin/
+build/
+
+# Mono/C# (if enabled later)
+.mono/
+*.csproj
+*.sln

@@ -1,0 +1,102 @@
+[gd_scene load_steps=3 format=3 uid="uid://dr821i3myh4hb"]
+
+[ext_resource type="Script" path="res://scripts/main_menu.gd" id="1_menu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.08, 0.1, 0.14, 0.92)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.04, 0.07, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="CenterContainer"]
+custom_minimum_size = Vector2(520, 360)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Expedition Rover II - The Sequel"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Select rover frame variant, then continue to customization"
+horizontal_alignment = 1
+
+[node name="SpacerTop" type="Control" parent="CenterContainer/Panel/VBox"]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+
+[node name="VariantLabel" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Rover Variant"
+
+[node name="VariantOption" type="OptionButton" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+item_count = 3
+selected = 0
+popup/item_0/text = "Surveyor Frame"
+popup/item_0/id = 0
+popup/item_1/text = "Expedition Rig"
+popup/item_1/id = 1
+popup/item_2/text = "Tech Crawler"
+popup/item_2/id = 2
+
+[node name="Info" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+text = "Flow: Main Menu -> Customization -> Gameplay\nGameplay controls: WASD/Arrows move, Space thruster, R returns to menu"
+autowrap_mode = 2
+
+[node name="StartButton" type="Button" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+text = "Continue to Customization"
+
+[node name="QuitButton" type="Button" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+text = "Quit"
+
+[connection signal="item_selected" from="CenterContainer/Panel/VBox/VariantOption" to="." method="_on_variant_option_item_selected"]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/QuitButton" to="." method="_on_quit_button_pressed"]

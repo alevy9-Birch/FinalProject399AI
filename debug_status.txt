@@ -1,0 +1,2 @@
+Test monitor ready.
+Press T in-game to request ending the monitored test.

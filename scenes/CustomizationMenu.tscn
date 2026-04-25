@@ -1,0 +1,132 @@
+[gd_scene load_steps=4 format=3 uid="uid://cm2cxhpk2b2d3"]
+
+[ext_resource type="Script" path="res://scripts/customization_menu.gd" id="1_custom"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+bg_color = Color(0.08, 0.1, 0.14, 0.94)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="Environment" id="Environment_v0x8w"]
+background_mode = 0
+ambient_light_source = 1
+ambient_light_color = Color(0.32, 0.34, 0.38, 1)
+ambient_light_energy = 0.95
+
+[node name="CustomizationMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_custom")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.04, 0.07, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="CenterContainer"]
+custom_minimum_size = Vector2(820, 600)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="CenterContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Rover Customization"
+horizontal_alignment = 1
+
+[node name="VariantName" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Variant: Surveyor Frame"
+horizontal_alignment = 1
+
+[node name="ColorLabel" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+text = "Primary Frame Color"
+
+[node name="ColorOption" type="OptionButton" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PreviewContainer" type="PanelContainer" parent="CenterContainer/Panel/VBox"]
+custom_minimum_size = Vector2(700, 330)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="SubViewportContainer" type="SubViewportContainer" parent="CenterContainer/Panel/VBox/PreviewContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer"]
+transparent_bg = false
+handle_input_locally = false
+size = Vector2i(1024, 512)
+render_target_update_mode = 4
+
+[node name="PreviewRoot" type="Node3D" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport"]
+
+[node name="PreviewLight" type="DirectionalLight3D" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
+transform = Transform3D(0.819152, -0.219846, 0.529919, 0, 0.92388, 0.382683, -0.573576, -0.313476, 0.757696, 0, 0, 0)
+light_energy = 1.5
+
+[node name="PreviewAmbient" type="WorldEnvironment" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
+environment = SubResource("Environment_v0x8w")
+
+[node name="PreviewFill" type="OmniLight3D" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.1, 1.5)
+light_energy = 0.65
+omni_range = 12.0
+
+[node name="PreviewCamera" type="Camera3D" parent="CenterContainer/Panel/VBox/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 2.8, 8.6)
+current = true
+
+[node name="Buttons" type="HBoxContainer" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BackButton" type="Button" parent="CenterContainer/Panel/VBox/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Back to Main Menu"
+
+[node name="StartButton" type="Button" parent="CenterContainer/Panel/VBox/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Game"
+
+[connection signal="item_selected" from="CenterContainer/Panel/VBox/ColorOption" to="." method="_on_color_option_item_selected"]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/Buttons/BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/Buttons/StartButton" to="." method="_on_start_button_pressed"]
