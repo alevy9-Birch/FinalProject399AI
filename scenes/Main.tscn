@@ -5,9 +5,9 @@
 [ext_resource type="Script" path="res://scripts/planet_terrain.gd" id="3_planet"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
-sky_top_color = Color(0.12, 0.14, 0.22, 1)
-sky_horizon_color = Color(0.35, 0.42, 0.55, 1)
-ground_bottom_color = Color(0.06, 0.06, 0.08, 1)
+sky_top_color = Color(0.01, 0.01, 0.03, 1)
+sky_horizon_color = Color(0.02, 0.02, 0.05, 1)
+ground_bottom_color = Color(0.005, 0.005, 0.01, 1)
 
 [sub_resource type="Sky" id="Sky_6j8v1"]
 sky_material = SubResource("ProceduralSkyMaterial_sky")
@@ -16,7 +16,7 @@ sky_material = SubResource("ProceduralSkyMaterial_sky")
 background_mode = 2
 sky = SubResource("Sky_6j8v1")
 ambient_light_source = 3
-ambient_light_energy = 0.85
+ambient_light_energy = 0.45
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_planet_tex"]
 noise_type = 0

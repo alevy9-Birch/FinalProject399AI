@@ -32,6 +32,10 @@ extends RigidBody3D
 @export var planet_path: NodePath = NodePath("../Planet")
 @export var gravity_strength: float = 26.0
 @export var anti_roll_force: float = 22.0
+@export var radar_range: float = 55.0
+@export var mining_range: float = 8.0
+@export var radar_flash_hz: float = 2.0
+@export var radar_beep_volume_db: float = -30.0
 
 @onready var _ground_rays: Array[RayCast3D] = [
 	$GroundRays/FrontLeftRay,
@@ -51,11 +55,11 @@ extends RigidBody3D
 	$WheelVisuals/BackRightWheelPivot/BackRightWheel
 ]
 @onready var _variant_visuals: Array[Node3D] = [
-	$VariantRoot/VariantA,
-	$VariantRoot/VariantB,
-	$VariantRoot/VariantC,
-	$VariantRoot/VariantD,
-	$VariantRoot/VariantE
+	$VariantRoot/VariantA
+]
+@onready var _radar_buttons: Array[MeshInstance3D] = [
+	$VariantRoot/VariantA/RadarButtonFront,
+	$VariantRoot/VariantA/RadarButtonDish
 ]
 @onready var _thruster_bar: ProgressBar = get_node_or_null("/root/Main/HUD/ThrusterPanel/ThrusterBar") as ProgressBar
 
@@ -72,27 +76,19 @@ var _planet: Node3D
 var _active_variant_index: int = 0
 var _primary_color: Color = Color(0.92, 0.93, 0.95, 1.0)
 var _telemetry_timer: float = 0.0
+var _radar_button_mats: Array[StandardMaterial3D] = []
+var _radar_flash_timer: float = 0.0
+var _radar_flash_on: bool = false
+var _radar_audio_player: AudioStreamPlayer3D
+var _radar_audio_playback: AudioStreamGeneratorPlayback
+var _nearest_ore: Node3D
+var _nearest_ore_dist: float = INF
+var _ore_collected: int = 0
 
 const VARIANT_STATS: Array[Dictionary] = [
-	{ # Surveyor Frame
+	{ # Default Rover
 		"mass": 8.0, "drive_force": 760.0, "max_drive_speed": 28.0,
 		"thruster_fuel_capacity": 100.0, "thruster_initial_impulse_force": 280.0, "thruster_sustain_force": 170.0
-	},
-	{ # Expedition Rig
-		"mass": 9.0, "drive_force": 700.0, "max_drive_speed": 26.0,
-		"thruster_fuel_capacity": 120.0, "thruster_initial_impulse_force": 300.0, "thruster_sustain_force": 185.0
-	},
-	{ # Tech Crawler
-		"mass": 7.2, "drive_force": 820.0, "max_drive_speed": 31.0,
-		"thruster_fuel_capacity": 90.0, "thruster_initial_impulse_force": 260.0, "thruster_sustain_force": 165.0
-	},
-	{ # Jumper Scout
-		"mass": 6.4, "drive_force": 900.0, "max_drive_speed": 34.0,
-		"thruster_fuel_capacity": 135.0, "thruster_initial_impulse_force": 370.0, "thruster_sustain_force": 205.0
-	},
-	{ # Heavy Miner
-		"mass": 12.8, "drive_force": 640.0, "max_drive_speed": 22.0,
-		"thruster_fuel_capacity": 180.0, "thruster_initial_impulse_force": 430.0, "thruster_sustain_force": 230.0
 	}
 ]
 
@@ -106,7 +102,11 @@ func _ready() -> void:
 		_back_right_pivot.position
 	]
 	_apply_selected_variant()
+	_apply_custom_loadout_stats()
 	_apply_selected_color()
+	_apply_mission_gravity()
+	_setup_radar_materials()
+	_setup_radar_audio()
 	_thruster_fuel = thruster_fuel_capacity
 
 
@@ -135,6 +135,8 @@ func _physics_process(delta: float) -> void:
 	_update_thruster_ui()
 	_check_button_orientation_reset()
 	_update_thruster_refill(delta)
+	_update_ore_radar(delta)
+	_handle_mining_input()
 	_was_grounded_last_frame = _grounded
 	_log_telemetry(delta, forward_speed)
 
@@ -173,6 +175,28 @@ func _apply_selected_color() -> void:
 		set_primary_color(state.COLOR_VALUES[idx])
 
 
+func _apply_custom_loadout_stats() -> void:
+	var state := get_node_or_null("/root/GameState")
+	if state == null or not state.has_method("get_final_rover_stats"):
+		return
+	var stats: Dictionary = state.get_final_rover_stats()
+	if stats.is_empty():
+		return
+	mass = float(stats.get("mass", mass))
+	drive_force = float(stats.get("drive_force", drive_force))
+	max_drive_speed = float(stats.get("max_drive_speed", max_drive_speed))
+	turn_torque = float(stats.get("turn_torque", turn_torque))
+	air_torque = float(stats.get("air_torque", air_torque))
+	thruster_fuel_capacity = float(stats.get("thruster_fuel_capacity", thruster_fuel_capacity))
+	thruster_initial_impulse_force = float(stats.get("thruster_initial_impulse_force", thruster_initial_impulse_force))
+	thruster_sustain_force = float(stats.get("thruster_sustain_force", thruster_sustain_force))
+	thruster_refill_rate = float(stats.get("thruster_refill_rate", thruster_refill_rate))
+	thruster_burn_rate = float(stats.get("thruster_burn_rate", thruster_burn_rate))
+	radar_range = float(stats.get("radar_range", radar_range))
+	mining_range = float(stats.get("mining_range", mining_range))
+	radar_flash_hz = float(stats.get("radar_flash_hz", radar_flash_hz))
+
+
 func set_primary_color(color: Color) -> void:
 	_primary_color = color
 	_recolor_variant_meshes()
@@ -204,6 +228,17 @@ func _return_to_main_menu() -> void:
 	if state != null:
 		state.last_played_variant = state.selected_rover_variant
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+
+
+func _apply_mission_gravity() -> void:
+	var mission_generator := get_node_or_null("/root/MissionGenerator")
+	if mission_generator == null:
+		return
+	var mission: Dictionary = mission_generator.get_current_mission()
+	if mission.is_empty():
+		return
+	var gravity_mult: float = float(mission.get("gravity_multiplier", 1.0))
+	gravity_strength = 26.0 * gravity_mult
 
 
 func _resolve_planet() -> void:
@@ -414,6 +449,108 @@ func _update_thruster_refill(delta: float) -> void:
 			_thruster_locked_until_full = false
 
 
+func _setup_radar_materials() -> void:
+	_radar_button_mats.clear()
+	for button in _radar_buttons:
+		var base_mat: StandardMaterial3D = button.material_override as StandardMaterial3D
+		if base_mat == null:
+			continue
+		var dup: StandardMaterial3D = base_mat.duplicate() as StandardMaterial3D
+		dup.emission_enabled = true
+		dup.emission = Color(0.35, 0.03, 0.03, 1.0)
+		dup.emission_energy_multiplier = 0.12
+		button.material_override = dup
+		_radar_button_mats.append(dup)
+
+
+func _setup_radar_audio() -> void:
+	_radar_audio_player = AudioStreamPlayer3D.new()
+	_radar_audio_player.name = "RadarBeepPlayer"
+	_radar_audio_player.max_distance = 75.0
+	_radar_audio_player.unit_size = 8.0
+	_radar_audio_player.volume_db = radar_beep_volume_db
+	add_child(_radar_audio_player)
+	var generator := AudioStreamGenerator.new()
+	generator.mix_rate = 22050.0
+	generator.buffer_length = 0.18
+	_radar_audio_player.stream = generator
+	_radar_audio_player.play()
+	_radar_audio_playback = _radar_audio_player.get_stream_playback() as AudioStreamGeneratorPlayback
+
+
+func _update_ore_radar(delta: float) -> void:
+	_find_nearest_ore()
+	var ore_in_range: bool = _nearest_ore != null and _nearest_ore_dist <= radar_range
+	if not ore_in_range:
+		_radar_flash_timer = 0.0
+		_set_radar_flash(false)
+		return
+
+	var flash_interval: float = 1.0 / maxf(radar_flash_hz, 0.1)
+	_radar_flash_timer += delta
+	while _radar_flash_timer >= flash_interval:
+		_radar_flash_timer -= flash_interval
+		_radar_flash_on = not _radar_flash_on
+		_set_radar_flash(_radar_flash_on)
+		if _radar_flash_on:
+			_emit_radar_beep()
+
+
+func _set_radar_flash(enabled: bool) -> void:
+	_radar_flash_on = enabled
+	for mat in _radar_button_mats:
+		mat.emission_energy_multiplier = 1.5 if enabled else 0.12
+
+
+func _emit_radar_beep() -> void:
+	if _radar_audio_playback == null:
+		return
+	var freq: float = 920.0
+	var seconds: float = 0.07
+	var sample_rate: float = 22050.0
+	var frame_count: int = int(seconds * sample_rate)
+	for i in range(frame_count):
+		var t: float = float(i) / sample_rate
+		var envelope: float = 1.0 - float(i) / float(maxi(frame_count, 1))
+		var amp: float = 0.08 * envelope
+		var v: float = sin(TAU * freq * t) * amp
+		_radar_audio_playback.push_frame(Vector2(v, v))
+
+
+func _find_nearest_ore() -> void:
+	_nearest_ore = null
+	_nearest_ore_dist = INF
+	var deposits: Array[Node] = get_tree().get_nodes_in_group("ore_deposit")
+	for node in deposits:
+		if not is_instance_valid(node):
+			continue
+		if node.has_method("is_collected") and node.call("is_collected"):
+			continue
+		var ore_node: Node3D = node as Node3D
+		if ore_node == null:
+			continue
+		var d: float = global_position.distance_to(ore_node.global_position)
+		if d < _nearest_ore_dist:
+			_nearest_ore_dist = d
+			_nearest_ore = ore_node
+
+
+func _handle_mining_input() -> void:
+	if not Input.is_action_just_pressed("mine_ore"):
+		return
+	if _nearest_ore == null or _nearest_ore_dist > mining_range:
+		return
+	if not _nearest_ore.has_method("collect"):
+		return
+	var gained: int = int(_nearest_ore.call("collect"))
+	if gained <= 0:
+		return
+	_ore_collected += gained
+	var logger := get_node_or_null("/root/TestLogger")
+	if logger != null:
+		logger.log_event("ore_collected", "value=%d total=%d distance=%.2f" % [gained, _ore_collected, _nearest_ore_dist])
+
+
 func _check_button_orientation_reset() -> void:
 	_reset_button_ray.force_raycast_update()
 	if not _reset_button_ray.is_colliding():
@@ -472,10 +609,14 @@ func _log_telemetry(delta: float, forward_speed: float) -> void:
 	_telemetry_timer = 0.0
 	var logger := get_node_or_null("/root/TestLogger")
 	if logger != null:
-		var details: String = "v=%.2f fuel=%.1f grounded=%s variant=%d" % [
+		var ore_in_radar: bool = _nearest_ore != null and _nearest_ore_dist <= radar_range
+		var details: String = "v=%.2f fuel=%.1f grounded=%s variant=%d ore_total=%d ore_in_radar=%s ore_dist=%.2f" % [
 			forward_speed,
 			_thruster_fuel,
 			str(_grounded),
-			_active_variant_index
+			_active_variant_index,
+			_ore_collected,
+			str(ore_in_radar),
+			_nearest_ore_dist if _nearest_ore != null else -1.0
 		]
 		logger.log_event("rover_telemetry", details)

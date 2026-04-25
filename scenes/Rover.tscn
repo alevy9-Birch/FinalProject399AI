@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://cv5sk7rif3x6m"]
+[gd_scene load_steps=22 format=3 uid="uid://cv5sk7rif3x6m"]
 
 [ext_resource type="Script" path="res://scripts/rover_controller.gd" id="1_rover"]
 [ext_resource type="Script" path="res://scripts/third_person_camera.gd" id="2_cam"]
@@ -65,6 +65,10 @@ height = 0.36
 [sub_resource type="SphereMesh" id="SphereMesh_button"]
 radius = 0.22
 height = 0.44
+
+[sub_resource type="SphereMesh" id="SphereMesh_radar_button"]
+radius = 0.08
+height = 0.16
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_button"]
 radius = 0.24
@@ -142,6 +146,16 @@ material_override = SubResource("StandardMaterial3D_tech_dark")
 position = Vector3(0, 0.22, -1.15)
 mesh = SubResource("BoxMesh_tech_box_long")
 material_override = SubResource("StandardMaterial3D_sensor_blue")
+
+[node name="RadarButtonFront" type="MeshInstance3D" parent="VariantRoot/VariantA"]
+position = Vector3(0, 0.43, -1.15)
+mesh = SubResource("SphereMesh_radar_button")
+material_override = SubResource("StandardMaterial3D_button")
+
+[node name="RadarButtonDish" type="MeshInstance3D" parent="VariantRoot/VariantA"]
+position = Vector3(0, 1.28, -0.15)
+mesh = SubResource("SphereMesh_radar_button")
+material_override = SubResource("StandardMaterial3D_button")
 
 [node name="VariantB" type="Node3D" parent="VariantRoot"]
 visible = false

@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://cm2cxhpk2b2d3"]
+[gd_scene load_steps=6 format=3 uid="uid://cm2cxhpk2b2d3"]
 
 [ext_resource type="Script" path="res://scripts/customization_menu.gd" id="1_custom"]
 
@@ -8,6 +8,18 @@ corner_radius_top_left = 12
 corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tech_slot"]
+bg_color = Color(0.03, 0.11, 0.17, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.1, 0.9, 0.98, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [sub_resource type="Environment" id="Environment_v0x8w"]
 background_mode = 0
@@ -42,7 +54,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="Panel" parent="CenterContainer"]
-custom_minimum_size = Vector2(820, 600)
+custom_minimum_size = Vector2(920, 680)
 layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
@@ -66,8 +78,16 @@ horizontal_alignment = 1
 [node name="VariantName" type="Label" parent="CenterContainer/Panel/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "Variant: Surveyor Frame"
+text = "Chassis: Expedition Chassis"
 horizontal_alignment = 1
+
+[node name="ChassisLabel" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+text = "Chassis"
+
+[node name="ChassisOption" type="OptionButton" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="ColorLabel" type="Label" parent="CenterContainer/Panel/VBox"]
 layout_mode = 2
@@ -76,6 +96,80 @@ text = "Primary Frame Color"
 [node name="ColorOption" type="OptionButton" parent="CenterContainer/Panel/VBox"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="StatsLabel" type="Label" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Stats: --"
+autowrap_mode = 2
+
+[node name="UpgradeSection" type="VBoxContainer" parent="CenterContainer/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UpgradeHeader" type="Label" parent="CenterContainer/Panel/VBox/UpgradeSection"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "Component Slots"
+
+[node name="UpgradeHint" type="Label" parent="CenterContainer/Panel/VBox/UpgradeSection"]
+layout_mode = 2
+text = "Click a tech slot, then choose an upgrade"
+
+[node name="SlotsGrid" type="GridContainer" parent="CenterContainer/Panel/VBox/UpgradeSection"]
+layout_mode = 2
+columns = 4
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="SlotButton0" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid"]
+custom_minimum_size = Vector2(120, 72)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_tech_slot")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tech_slot")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tech_slot")
+text = "Slot 1"
+
+[node name="SlotButton1" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid"]
+custom_minimum_size = Vector2(120, 72)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_tech_slot")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tech_slot")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tech_slot")
+text = "Slot 2"
+
+[node name="SlotButton2" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid"]
+custom_minimum_size = Vector2(120, 72)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_tech_slot")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tech_slot")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tech_slot")
+text = "Slot 3"
+
+[node name="SlotButton3" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid"]
+custom_minimum_size = Vector2(120, 72)
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_tech_slot")
+theme_override_styles/hover = SubResource("StyleBoxFlat_tech_slot")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_tech_slot")
+text = "Slot 4"
+
+[node name="UpgradePickerRow" type="HBoxContainer" parent="CenterContainer/Panel/VBox/UpgradeSection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SelectedSlotLabel" type="Label" parent="CenterContainer/Panel/VBox/UpgradeSection/UpgradePickerRow"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+text = "Selected Slot: 1"
+
+[node name="UpgradeOption" type="OptionButton" parent="CenterContainer/Panel/VBox/UpgradeSection/UpgradePickerRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ApplyUpgradeButton" type="Button" parent="CenterContainer/Panel/VBox/UpgradeSection/UpgradePickerRow"]
+layout_mode = 2
+text = "Equip"
 
 [node name="PreviewContainer" type="PanelContainer" parent="CenterContainer/Panel/VBox"]
 custom_minimum_size = Vector2(700, 330)
@@ -128,5 +222,11 @@ size_flags_horizontal = 3
 text = "Start Game"
 
 [connection signal="item_selected" from="CenterContainer/Panel/VBox/ColorOption" to="." method="_on_color_option_item_selected"]
+[connection signal="item_selected" from="CenterContainer/Panel/VBox/ChassisOption" to="." method="_on_chassis_option_item_selected"]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid/SlotButton0" to="." method="_on_slot_button_pressed" binds= [0]]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid/SlotButton1" to="." method="_on_slot_button_pressed" binds= [1]]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid/SlotButton2" to="." method="_on_slot_button_pressed" binds= [2]]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/SlotsGrid/SlotButton3" to="." method="_on_slot_button_pressed" binds= [3]]
+[connection signal="pressed" from="CenterContainer/Panel/VBox/UpgradeSection/UpgradePickerRow/ApplyUpgradeButton" to="." method="_on_apply_upgrade_button_pressed"]
 [connection signal="pressed" from="CenterContainer/Panel/VBox/Buttons/BackButton" to="." method="_on_back_button_pressed"]
 [connection signal="pressed" from="CenterContainer/Panel/VBox/Buttons/StartButton" to="." method="_on_start_button_pressed"]

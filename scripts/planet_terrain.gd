@@ -3,6 +3,8 @@ extends StaticBody3D
 ## Procedural sphere with layered noise displacement (hills / mountains).
 ## Builds mesh + concave trimesh collision once on ready.
 
+const ORE_DEPOSIT_SCRIPT := preload("res://scripts/ore_deposit.gd")
+
 @export var planet_radius: float = 980.0
 @export var rings: int = 64
 @export var radial_segments: int = 128
@@ -15,11 +17,17 @@ extends StaticBody3D
 
 @onready var _mesh_instance: MeshInstance3D = $PlanetMesh
 @onready var _collision_shape: CollisionShape3D = $PlanetCollision
+@onready var _props_root: Node3D = _ensure_props_root()
+@onready var _ore_root: Node3D = _ensure_ore_root()
 
 
 func _ready() -> void:
+	var mission := _get_mission_data()
+	_apply_mission_params(mission)
+	var mission_seed: int = int(mission.get("mission_seed", 1))
+
 	var macro: FastNoiseLite = FastNoiseLite.new()
-	macro.seed = 90210
+	macro.seed = mission_seed + 101
 	macro.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	macro.frequency = 0.55
 	macro.fractal_octaves = 4
@@ -27,7 +35,7 @@ func _ready() -> void:
 	macro.fractal_gain = 0.48
 
 	var ridge: FastNoiseLite = FastNoiseLite.new()
-	ridge.seed = 4102
+	ridge.seed = mission_seed + 202
 	ridge.noise_type = FastNoiseLite.TYPE_PERLIN
 	ridge.frequency = 0.9
 	ridge.fractal_octaves = 3
@@ -35,7 +43,7 @@ func _ready() -> void:
 	ridge.fractal_gain = 0.55
 
 	var detail: FastNoiseLite = FastNoiseLite.new()
-	detail.seed = 771
+	detail.seed = mission_seed + 303
 	detail.noise_type = FastNoiseLite.TYPE_SIMPLEX
 	detail.frequency = 1.0
 	detail.fractal_octaves = 2
@@ -86,7 +94,286 @@ func _ready() -> void:
 	arr_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 
 	_mesh_instance.mesh = arr_mesh
+	_apply_surface_material(mission)
 
 	var trimesh: Shape3D = arr_mesh.create_trimesh_shape()
 	if trimesh != null:
 		_collision_shape.shape = trimesh
+
+	_spawn_props(mission, macro, ridge, detail)
+	_spawn_ore_deposits(mission, macro, ridge, detail)
+	_position_rover_spawn(mission, macro, ridge, detail)
+
+
+func _get_mission_data() -> Dictionary:
+	var mission_generator := get_node_or_null("/root/MissionGenerator")
+	if mission_generator == null:
+		return {}
+	var mission: Dictionary = mission_generator.get_current_mission()
+	if mission.is_empty():
+		mission = mission_generator.generate_new_mission()
+	return mission
+
+
+func _apply_mission_params(mission: Dictionary) -> void:
+	if mission.is_empty():
+		return
+	planet_radius = float(mission.get("planet_radius", planet_radius))
+	var terrain: Dictionary = mission.get("terrain_profile", {}) as Dictionary
+	if not terrain.is_empty():
+		macro_height = float(terrain.get("macro_height", macro_height))
+		ridge_height = float(terrain.get("ridge_height", ridge_height))
+		detail_height = float(terrain.get("detail_height", detail_height))
+
+	var size_class: int = int(mission.get("planet_size_class", 2))
+	match size_class:
+		0:
+			rings = 40
+			radial_segments = 80
+		1:
+			rings = 50
+			radial_segments = 96
+		2:
+			rings = 64
+			radial_segments = 128
+		3:
+			rings = 76
+			radial_segments = 152
+		4:
+			rings = 86
+			radial_segments = 176
+
+
+func _ensure_props_root() -> Node3D:
+	var existing: Node = get_node_or_null("PropsRoot")
+	if existing is Node3D:
+		return existing as Node3D
+	var root := Node3D.new()
+	root.name = "PropsRoot"
+	add_child(root)
+	return root
+
+
+func _clear_existing_props() -> void:
+	for child in _props_root.get_children():
+		child.queue_free()
+
+
+func _ensure_ore_root() -> Node3D:
+	var existing: Node = get_node_or_null("OreRoot")
+	if existing is Node3D:
+		return existing as Node3D
+	var root := Node3D.new()
+	root.name = "OreRoot"
+	add_child(root)
+	return root
+
+
+func _clear_existing_ore() -> void:
+	for child in _ore_root.get_children():
+		child.queue_free()
+
+
+func _sample_displacement(dir: Vector3, macro: FastNoiseLite, ridge: FastNoiseLite, detail: FastNoiseLite) -> float:
+	var mpos: Vector3 = dir * noise_macro_scale
+	var n_macro: float = macro.get_noise_3d(mpos.x, mpos.y, mpos.z)
+	var rpos: Vector3 = dir * noise_ridge_scale
+	var n_ridge: float = absf(ridge.get_noise_3d(rpos.x, rpos.y, rpos.z))
+	var dpos: Vector3 = dir * noise_detail_scale
+	var n_detail: float = detail.get_noise_3d(dpos.x, dpos.y, dpos.z)
+	var disp: float = n_macro * macro_height + n_ridge * ridge_height + n_detail * detail_height
+	disp *= 0.85 + 0.15 * smoothstep(0.0, 1.0, clampf((n_macro + 1.0) * 0.5, 0.0, 1.0))
+	return disp
+
+
+func _sample_surface_point(dir: Vector3, macro: FastNoiseLite, ridge: FastNoiseLite, detail: FastNoiseLite) -> Vector3:
+	var disp: float = _sample_displacement(dir, macro, ridge, detail)
+	return dir * (planet_radius + disp)
+
+
+func _spawn_props(mission: Dictionary, macro: FastNoiseLite, ridge: FastNoiseLite, detail: FastNoiseLite) -> void:
+	_clear_existing_props()
+	if mission.is_empty():
+		return
+
+	var mission_seed: int = int(mission.get("mission_seed", 1))
+	var prop_density: float = float(mission.get("prop_density", 0.01))
+	var prop_profile: int = int(mission.get("prop_profile", 0))
+	var prop_count: int = clampi(int(1200.0 * prop_density), 4, 140)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = mission_seed + 404
+
+	for i in range(prop_count):
+		var dir := Vector3(
+			rng.randf_range(-1.0, 1.0),
+			rng.randf_range(-1.0, 1.0),
+			rng.randf_range(-1.0, 1.0)
+		).normalized()
+		if dir.length_squared() < 0.001:
+			continue
+		var surface_point: Vector3 = _sample_surface_point(dir, macro, ridge, detail)
+		var prop := _build_prop(prop_profile, rng)
+		if prop == null:
+			continue
+		prop.position = surface_point
+		prop.basis = Basis.looking_at(dir, Vector3.RIGHT)
+		prop.rotate_object_local(Vector3.UP, rng.randf_range(-PI, PI))
+		_props_root.add_child(prop)
+
+
+func _spawn_ore_deposits(mission: Dictionary, macro: FastNoiseLite, ridge: FastNoiseLite, detail: FastNoiseLite) -> void:
+	_clear_existing_ore()
+	if mission.is_empty():
+		return
+	var mission_seed: int = int(mission.get("mission_seed", 1))
+	var ore_count: int = int(mission.get("ore_node_count", 0))
+	var yield_range: Vector2i = mission.get("ore_yield_range", Vector2i(1, 3)) as Vector2i
+	var rng := RandomNumberGenerator.new()
+	rng.seed = mission_seed + 505
+
+	for i in range(maxi(0, ore_count)):
+		var dir := Vector3(
+			rng.randf_range(-1.0, 1.0),
+			rng.randf_range(-1.0, 1.0),
+			rng.randf_range(-1.0, 1.0)
+		).normalized()
+		if dir.length_squared() < 0.001:
+			continue
+		var surface_point: Vector3 = _sample_surface_point(dir, macro, ridge, detail)
+		var ore := Node3D.new()
+		ore.name = "OreDeposit_%d" % i
+		ore.set_script(ORE_DEPOSIT_SCRIPT)
+		ore.set("ore_value", rng.randi_range(yield_range.x, max(yield_range.x, yield_range.y)))
+		ore.position = surface_point
+		ore.add_to_group("ore_deposit")
+		_ore_root.add_child(ore)
+
+
+func _build_prop(prop_profile: int, rng: RandomNumberGenerator) -> Node3D:
+	match prop_profile:
+		0:
+			return _make_rock_cluster(rng)
+		1:
+			return _make_crystal(rng)
+		2:
+			return _make_ruin_pillar(rng)
+		3:
+			return _make_tree(rng)
+		4:
+			return _make_ice_spike(rng)
+		_:
+			return _make_rock_cluster(rng)
+
+
+func _make_rock_cluster(rng: RandomNumberGenerator) -> Node3D:
+	var root := Node3D.new()
+	for i in range(rng.randi_range(1, 3)):
+		var mesh := MeshInstance3D.new()
+		mesh.mesh = SphereMesh.new()
+		mesh.scale = Vector3.ONE * rng.randf_range(0.6, 1.8)
+		mesh.position = Vector3(rng.randf_range(-0.6, 0.6), rng.randf_range(0.2, 0.9), rng.randf_range(-0.6, 0.6))
+		mesh.material_override = _make_prop_material(Color(0.36, 0.33, 0.3, 1.0), 0.96, 0.0)
+		root.add_child(mesh)
+	return root
+
+
+func _make_crystal(rng: RandomNumberGenerator) -> Node3D:
+	var mesh := MeshInstance3D.new()
+	var prism := CylinderMesh.new()
+	prism.top_radius = 0.08
+	prism.bottom_radius = rng.randf_range(0.18, 0.26)
+	prism.height = rng.randf_range(1.6, 3.8)
+	prism.radial_segments = 6
+	mesh.mesh = prism
+	mesh.position = Vector3(0, prism.height * 0.5, 0)
+	mesh.material_override = _make_prop_material(Color(0.42, 0.8, 0.92, 1.0), 0.1, 0.65)
+	return mesh
+
+
+func _make_ruin_pillar(rng: RandomNumberGenerator) -> Node3D:
+	var mesh := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(rng.randf_range(0.35, 0.7), rng.randf_range(1.0, 2.4), rng.randf_range(0.35, 0.7))
+	mesh.mesh = box
+	mesh.position = Vector3(0, box.size.y * 0.5, 0)
+	mesh.material_override = _make_prop_material(Color(0.5, 0.46, 0.4, 1.0), 0.82, 0.0)
+	return mesh
+
+
+func _make_tree(rng: RandomNumberGenerator) -> Node3D:
+	var root := Node3D.new()
+	var trunk := MeshInstance3D.new()
+	var trunk_mesh := CylinderMesh.new()
+	trunk_mesh.top_radius = 0.12
+	trunk_mesh.bottom_radius = 0.18
+	trunk_mesh.height = rng.randf_range(1.4, 2.8)
+	trunk.mesh = trunk_mesh
+	trunk.position = Vector3(0, trunk_mesh.height * 0.5, 0)
+	trunk.material_override = _make_prop_material(Color(0.42, 0.28, 0.2, 1.0), 0.9, 0.0)
+	root.add_child(trunk)
+
+	var canopy := MeshInstance3D.new()
+	var canopy_mesh := SphereMesh.new()
+	canopy_mesh.radius = rng.randf_range(0.65, 1.25)
+	canopy_mesh.height = canopy_mesh.radius * 2.0
+	canopy.mesh = canopy_mesh
+	canopy.position = Vector3(0, trunk_mesh.height + canopy_mesh.radius * 0.7, 0)
+	canopy.material_override = _make_prop_material(Color(0.25, 0.58, 0.3, 1.0), 0.88, 0.0)
+	root.add_child(canopy)
+	return root
+
+
+func _make_ice_spike(rng: RandomNumberGenerator) -> Node3D:
+	var mesh := MeshInstance3D.new()
+	var spike := CylinderMesh.new()
+	spike.top_radius = 0.02
+	spike.bottom_radius = rng.randf_range(0.12, 0.2)
+	spike.height = rng.randf_range(1.8, 3.2)
+	spike.radial_segments = 8
+	mesh.mesh = spike
+	mesh.position = Vector3(0, spike.height * 0.5, 0)
+	mesh.material_override = _make_prop_material(Color(0.75, 0.9, 0.98, 1.0), 0.08, 0.35)
+	return mesh
+
+
+func _make_prop_material(color: Color, roughness: float, metallic: float) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = roughness
+	mat.metallic = metallic
+	return mat
+
+
+func _apply_surface_material(mission: Dictionary) -> void:
+	var base: StandardMaterial3D = _mesh_instance.material_override as StandardMaterial3D
+	var mat: StandardMaterial3D = base.duplicate() as StandardMaterial3D if base != null else StandardMaterial3D.new()
+	var planet_type: int = int(mission.get("planet_type", 0))
+	match planet_type:
+		0:
+			mat.albedo_color = Color(0.41, 0.36, 0.32, 1.0)
+		1:
+			mat.albedo_color = Color(0.5, 0.47, 0.42, 1.0)
+		2:
+			mat.albedo_color = Color(0.52, 0.54, 0.58, 1.0)
+			mat.metallic = 0.2
+		3:
+			mat.albedo_color = Color(0.45, 0.27, 0.2, 1.0)
+		4:
+			mat.albedo_color = Color(0.76, 0.84, 0.88, 1.0)
+		5:
+			mat.albedo_color = Color(0.3, 0.44, 0.31, 1.0)
+	_mesh_instance.material_override = mat
+
+
+func _position_rover_spawn(mission: Dictionary, macro: FastNoiseLite, ridge: FastNoiseLite, detail: FastNoiseLite) -> void:
+	var rover: Node3D = get_node_or_null("../Rover") as Node3D
+	if rover == null:
+		return
+	var up := Vector3.UP
+	var surface: Vector3 = _sample_surface_point(up, macro, ridge, detail)
+	var spawn_altitude: float = 10.0 + clampf(planet_radius * 0.04, 10.0, 70.0)
+	rover.global_position = global_position + surface + up * spawn_altitude
+	if rover is RigidBody3D:
+		var rb: RigidBody3D = rover as RigidBody3D
+		rb.linear_velocity = Vector3.ZERO
+		rb.angular_velocity = Vector3.ZERO
