@@ -4,21 +4,21 @@ This list prioritizes practical improvements based on current prototype behavior
 
 ## High Priority (Gameplay Reliability)
 
-1. **Guaranteed Nearby Ore Spawn**
-   - Ensure at least one ore cluster spawns within a short traversal radius from initial landing.
-   - Prevent dead starts where radar never enters range.
+1. **Fix Enemy Projectile Spawn Lifecycle Error**
+   - Latest tests show `!is_inside_tree()` errors in `enemy_actor.gd` during projectile fire.
+   - Guard against firing after actor/tree teardown and centralize safe projectile spawn path.
 
-2. **Power Economy Tuning**
-   - Separate power costs by state (ground drive vs airborne stabilization vs thruster sustain).
-   - Add clear low-power thresholds and feedback cues.
+2. **Fix Exit-Time Leak Warnings**
+   - Godot reports leaked MultiMesh/instance dependencies on shutdown.
+   - Audit runtime-created visuals (enemy/projectile/warning visuals/starfield) and free ownership lifecycle.
 
-3. **Weapon Hit Feedback**
-   - Add impact flashes/particles at hit points.
-   - Add audio + cooldown feedback for both guns.
+3. **Enemy Pacing and Knockback Balance**
+   - Tune spawn cadence, max concurrent enemies, and knockback force by enemy type.
+   - Prevent soft-lock pinball states on small/high-gravity planets.
 
-4. **Mining Readability**
-   - Add short collection VFX/sound and floating ore gain text.
-   - Add simple mining cooldown indicator to HUD.
+4. **Jetpack + Win-Altitude Tuning**
+   - Ensure power-up location is always reachable early in mission.
+   - Tune altitude win threshold per planet-size class for consistent mission length.
 
 ## Medium Priority (System Design)
 
@@ -39,6 +39,10 @@ This list prioritizes practical improvements based on current prototype behavior
    - Create tiers or weighted bands for mission generation.
    - Ensure briefing values reflect intended challenge progression.
 
+4. **Enemy Data Tables**
+   - Move enemy stats/behavior constants to data dictionaries/resources.
+   - Makes balancing wave composition and per-type tuning faster.
+
 ## Medium Priority (UX)
 
 1. **Menu Card Design Consistency**
@@ -57,6 +61,7 @@ This list prioritizes practical improvements based on current prototype behavior
      - weapon fire hint when weapon equipped
      - mining hint near ore
      - thruster lock warning when grounded recharge lock is active
+    - extraction hint once jetpack is collected
 
 ## Long-Term / Final Polish
 

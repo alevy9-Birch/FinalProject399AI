@@ -33,6 +33,18 @@ This checklist tracks implementation status for the current prototype.
   - [x] Gatling firing behavior.
   - [x] Big Betsy firing behavior.
   - [x] Crosshair + tracer visuals.
+- [x] Enemy spawning over time (slow start, ramping cadence).
+- [x] Enemy archetypes implemented:
+  - [x] Minion groups (3).
+  - [x] Turret warning + hitscan knockback shot.
+  - [x] UFO high-hover slow heavy projectile.
+- [x] Enemy health and player weapon damage interaction.
+- [x] Enemy projectile knockback (no direct damage).
+- [x] Run-state loop:
+  - [x] Death (`R` or red button) returns to main menu and records run.
+  - [x] Altitude-based win condition returns to main menu and records run.
+- [x] Jetpack power-up spawn and pickup behavior.
+- [x] Run score tracking (`run`, `last`, `best`) in global state + menu display.
 
 ## In Progress / Needs Validation
 
@@ -40,15 +52,18 @@ This checklist tracks implementation status for the current prototype.
 - [ ] Balance pass for ore density vs radar range so mining loop is consistently reachable.
 - [ ] Validate upgrade interactions for edge cases (stacking, locked slots, menu transitions).
 - [ ] Validate weapon feel and readability under normal gameplay pacing.
+- [ ] Validate enemy pacing + knockback fairness on different planet gravity profiles.
+- [ ] Validate win altitude threshold against all planet size classes.
+- [ ] Validate jetpack power-up accessibility/spawn placement.
+- [ ] Validate score lifecycle matches intended design on repeated win/loss cycles.
 
 ## Not Done Yet
 
-- [ ] Alien enemy spawners and behavior sets (grunts/swarm/turret/UFO).
-- [ ] Damage/combat resolution loop (enemy and player health/impacts).
-- [ ] Mission win/lose rules aligned to full GDD (escape with jetpack condition).
-- [ ] Persistent run progression/high score lifecycle.
+- [ ] Convert prototype enemies into full GDD enemy roster/behaviors (including swarm and projectile variety).
+- [ ] Add proper player health/death-by-combat model (currently no HP-based death loop).
+- [ ] Add robust cleanup for runtime-spawned enemy visuals/projectiles to eliminate exit leak warnings.
+- [ ] Replace/retire temporary test-specific controls when production UX is finalized.
 - [ ] Final art/sound pass and UI polish pass (post-gameplay lock).
-- [ ] Cleanup and removal of temporary testing scaffolding when no longer needed.
 
 ## Later Cleanup Tasks
 

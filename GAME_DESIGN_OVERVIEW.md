@@ -20,8 +20,10 @@ Primary design principle: **readable gameplay first, visual polish second**.
    - Detect and mine ore.
    - Manage thruster fuel and battery power.
    - Use equipped weapons/tools.
+   - Survive enemy waves and seek escape altitude.
 4. **Score Outcome**
-   - Ore collected contributes to score progression.
+   - Ore collected contributes to run score.
+   - On run end, return to main menu with `last` and `best` summary.
 
 ## Current Implemented Systems
 
@@ -47,6 +49,18 @@ Primary design principle: **readable gameplay first, visual polish second**.
 - **Weapon system (upgrade dependent)**:
   - Gatling and Big Betsy functional firing behavior.
   - crosshair + tracer shot visuals.
+- **Enemy loop**:
+  - slow-ramping spawner over session time.
+  - Minion groups of 3 with noisy pursuit and weak slow projectiles.
+  - Turrets with one-second warning beam before high-knockback hitscan fire.
+  - UFOs that hover high and fire very slow high-knockback projectiles.
+- **Run-state loop**:
+  - Death: roof button contact or `R` returns to main menu.
+  - Win: reach configurable altitude above planet surface.
+  - Run score persistence: current run, last run, best run.
+- **Jetpack extraction power-up**:
+  - Spawned near start.
+  - Grants permanent stronger thrusters without normal fuel gating.
 
 ## UI Intent by Screen
 
@@ -60,10 +74,10 @@ Primary design principle: **readable gameplay first, visual polish second**.
   - Purpose: operational awareness.
   - Focus: fuel, battery, score, nearest ore, radar/mining state, speed, weapon status.
 
-## Planned Full Experience (Target State)
+## Planned Full Experience (Next Target State)
 
-- Spawn and behavior for alien factions (grunts/swarm/turret/UFO).
-- Mission objectives and extraction flow (jetpack escape condition).
-- Complete scoring/run lifecycle (death handling and high score accumulation).
-- Expanded upgrade interactions and combat depth.
+- Replace prototype enemy set with full GDD enemy taxonomy (grunts/swarm/turret/UFO variants).
+- Add explicit enemy-vs-player damage model (currently knockback-centric).
+- Improve combat readability (warning cues, hit VFX, sound, cleanup safety).
+- Expand run progression beyond per-session best/last score.
 

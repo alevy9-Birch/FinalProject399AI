@@ -34,11 +34,21 @@ This file is for future agents who need to quickly continue work on this reposit
     - power system
     - weapon fire
     - HUD updates
+    - run win/loss transitions
+- `scripts/enemy_manager.gd`
+  - Spawns enemy waves over time with slow early pacing.
+- `scripts/enemy_actor.gd`
+  - Implements minion, turret, and UFO behavior patterns.
+- `scripts/enemy_projectile.gd`
+  - Enemy projectile movement and rover knockback contact.
+- `scripts/jetpack_powerup.gd`
+  - Mission power-up that enables permanent boosted thrusters.
 - `scripts/game_state.gd`
   - Global runtime state:
     - selected chassis/color/upgrades
     - upgrade modifiers
     - derived final rover stats
+    - run score, last run score, best run score
 - `scripts/test_control.gd`
   - Handles `T` test exit marker + quit.
 - `scripts/test_logger.gd`
@@ -71,6 +81,8 @@ There is no separate shell test script file; testing is run by launching the God
   - `__LOG__ menu_*` transitions
   - `__LOG__ rover_telemetry ...`
   - `__LOG__ ore_collected` / `ore_auto_collected`
+  - `__LOG__ run_end won=<bool> reason=<reason> score=<n>`
+  - `__LOG__ jetpack_powerup_collected`
 - Test end marker:
   - `__END_TEST_REQUEST__`
 
@@ -91,13 +103,25 @@ There is no separate shell test script file; testing is run by launching the God
 - Radar/mining loop with score.
 - Fuel + battery power economy.
 - Weapon upgrades with crosshair/tracer fire visuals.
+- Enemy waves:
+  - Minions in groups of 3 (slow noisy drift + weak projectiles).
+  - Turrets (1s warning line + high-knockback hitscan).
+  - UFOs (high hover + slow high-knockback projectiles).
+- Run-state transitions:
+  - Death via `R` or roof red-button contact returns to main menu.
+  - Win via altitude threshold returns to main menu.
+  - Score persistence between runs (`last` and `best`) shown on main menu.
+- Jetpack power-up spawn near start:
+  - Grants permanent boosted thrusters with no normal fuel gating.
 
 ## Known Caveats
 
 - Some systems remain monolithic in `rover_controller.gd`.
-- Enemy combat loop is not fully implemented yet.
 - Balance values are in active tuning phase.
 - Temporary testing scaffolding still exists and will be removed later.
+- Latest tests show repeated runtime error in `enemy_actor.gd` when projectile spawn occurs after node lifecycle change:
+  - `Condition "!is_inside_tree()" is true. Returning: Transform3D()`
+- On test exit, Godot reports renderer/object leaks (MultiMesh/instance deps); likely related to runtime-created visuals needing explicit cleanup.
 
 ## Working Guidelines for Future Agents
 

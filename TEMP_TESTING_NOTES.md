@@ -3,6 +3,7 @@ Temporary test harness notes (remove once no longer needed):
 - Menu flow (temporary):
   - Main Menu -> Customization Menu -> Gameplay.
   - Gameplay `R` returns to Main Menu.
+  - Gameplay can also end by win altitude or roof red-button death flow.
 
 - In-game controls:
   - `R` (`reset_vehicle`): return to `MainMenu` from gameplay.
@@ -13,11 +14,17 @@ Temporary test harness notes (remove once no longer needed):
 - Test logging:
   - `TestLogger` autoload emits `__LOG__` heartbeat + event lines.
   - Gameplay emits periodic `rover_telemetry` (speed, fuel, grounded, variant).
+  - Run-state logs include:
+    - `run_end won=<bool> reason=<...> score=<n>`
+    - `jetpack_powerup_collected`
   - Menus emit variant/color selection and scene transition events.
 - Expected monitor behavior:
   - Launch game with console output enabled.
   - Poll logs frequently (1-2s) and watch for runtime `ERROR` lines, `__END_TEST_REQUEST__`, and `__LOG__` events.
   - If test fails, close the game process immediately.
+  - Call out repeated lifecycle issues if seen:
+    - `Condition "!is_inside_tree()" is true` from enemy firing
+    - exit-time renderer/object leak warnings
   - After test ends, report:
     1) outcome summary,
     2) actions observed from logs,
