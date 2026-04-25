@@ -23,6 +23,7 @@ func _ready() -> void:
 		_variant_option.selected = clampi(state.selected_rover_variant, 0, max(0, _variant_option.item_count - 1))
 	_variant_option.disabled = _variant_option.item_count <= 1
 	_set_generated_mission_briefing_values()
+	_append_score_summary()
 
 
 func _on_variant_option_item_selected(index: int) -> void:
@@ -77,3 +78,10 @@ func _set_generated_mission_briefing_values() -> void:
 	var yelp_score: float = float(mission.get("yelp_score", 2.5))
 	var yelp_tagline: String = str(mission.get("yelp_tagline", "Rocky but scenic"))
 	_yelp_review_value.text = "%.1f stars - %s" % [yelp_score, yelp_tagline]
+
+
+func _append_score_summary() -> void:
+	var state := get_node_or_null("/root/GameState")
+	if state == null:
+		return
+	_subtitle.text += "  |  Last: %d  Best: %d" % [int(state.last_run_score), int(state.best_run_score)]

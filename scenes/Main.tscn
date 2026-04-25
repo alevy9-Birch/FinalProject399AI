@@ -1,9 +1,11 @@
-[gd_scene load_steps=10 format=3 uid="uid://b4oo7f86s7gd4"]
+[gd_scene load_steps=12 format=3 uid="uid://b4oo7f86s7gd4"]
 
 [ext_resource type="PackedScene" path="res://scenes/Rover.tscn" id="1_e0nrl"]
 [ext_resource type="Script" path="res://scripts/debug_overlay.gd" id="2_qruo7"]
 [ext_resource type="Script" path="res://scripts/planet_terrain.gd" id="3_planet"]
 [ext_resource type="Script" path="res://scripts/starfield.gd" id="4_star"]
+[ext_resource type="Script" path="res://scripts/enemy_manager.gd" id="5_enemy"]
+[ext_resource type="Script" path="res://scripts/jetpack_powerup.gd" id="6_power"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 sky_top_color = Color(0.01, 0.01, 0.03, 1)
@@ -64,6 +66,12 @@ material_override = SubResource("StandardMaterial3D_planet")
 
 [node name="Rover" parent="." instance=ExtResource("1_e0nrl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1085, 0)
+
+[node name="EnemyManager" type="Node3D" parent="."]
+script = ExtResource("5_enemy")
+
+[node name="JetpackPowerup" type="Area3D" parent="."]
+script = ExtResource("6_power")
 
 [node name="DebugCamera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.887011, 0.461749, 0, -0.461749, 0.887011, 0, 18, 26)

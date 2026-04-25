@@ -8,6 +8,9 @@ var last_played_variant: int = 0
 var selected_color_index: int = 0
 var selected_chassis_index: int = 0
 var selected_upgrades: PackedStringArray = PackedStringArray(["None", "None", "None", "None"])
+var run_score: int = 0
+var last_run_score: int = 0
+var best_run_score: int = 0
 
 const VARIANT_NAMES: PackedStringArray = [
 	"Default Rover"
@@ -199,3 +202,18 @@ func has_upgrade(upgrade_name: String) -> bool:
 
 func get_upgrade_description(upgrade_name: String) -> String:
 	return str(UPGRADE_DESCRIPTIONS.get(upgrade_name, "No description available."))
+
+
+func start_new_run() -> void:
+	run_score = 0
+
+
+func add_score(amount: int) -> void:
+	run_score += maxi(0, amount)
+
+
+func finish_run(player_won: bool) -> void:
+	last_run_score = run_score
+	best_run_score = maxi(best_run_score, run_score)
+	if not player_won:
+		run_score = 0

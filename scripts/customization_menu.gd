@@ -188,6 +188,9 @@ func _on_back_button_pressed() -> void:
 
 
 func _on_start_button_pressed() -> void:
+	var state := get_node_or_null("/root/GameState")
+	if state != null and state.has_method("start_new_run"):
+		state.start_new_run()
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")
 
 

@@ -36,6 +36,7 @@ extends RigidBody3D
 @export var mining_range: float = 8.0
 @export var radar_flash_hz: float = 7.5
 @export var radar_beep_volume_db: float = -16.0
+@export var win_altitude_above_surface: float = 180.0
 
 @onready var _ground_rays: Array[RayCast3D] = [
 	$GroundRays/FrontLeftRay,
@@ -120,6 +121,8 @@ var _ore_direction_hint_timer: float = 0.0
 var _ore_direction_hint_text: String = "Ore Direction: --"
 var _stuck_tilt_timer: float = 0.0
 var _thruster_particles: Array[GPUParticles3D] = []
+var _permanent_thrusters_active: bool = false
+var _permanent_thruster_force: float = 540.0
 
 const VARIANT_STATS: Array[Dictionary] = [
 	{ # Default Rover
@@ -151,11 +154,14 @@ func _ready() -> void:
 	_setup_thruster_particles()
 	_thruster_fuel = thruster_fuel_capacity
 	_battery_power = _battery_max_power
+	var state := get_node_or_null("/root/GameState")
+	if state != null:
+		_ore_collected = int(state.run_score)
 
 
 func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("reset_vehicle"):
-		_return_to_main_menu()
+		_handle_run_end(false, "manual_reset")
 		return
 
 	_update_wheel_contacts()
@@ -164,6 +170,7 @@ func _physics_process(delta: float) -> void:
 	if _planet != null:
 		_apply_planet_gravity()
 		_apply_stability_torque(delta)
+		_check_win_altitude()
 	var forward_input: float = Input.get_axis("move_backward", "move_forward")
 	var turn_input: float = Input.get_axis("move_right", "move_left")
 	var boost_pressed: bool = Input.is_action_pressed("thruster")
@@ -426,6 +433,25 @@ func _return_to_main_menu() -> void:
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 
+func _handle_run_end(player_won: bool, reason: String) -> void:
+	var state := get_node_or_null("/root/GameState")
+	if state != null and state.has_method("finish_run"):
+		state.finish_run(player_won)
+	var logger := get_node_or_null("/root/TestLogger")
+	if logger != null:
+		logger.log_event("run_end", "won=%s reason=%s score=%d" % [str(player_won), reason, _ore_collected])
+	_return_to_main_menu()
+
+
+func _check_win_altitude() -> void:
+	if _planet == null:
+		return
+	var planet_radius_value: float = float(_planet.get("planet_radius")) if _planet.has_method("get") else 0.0
+	var altitude: float = global_position.distance_to(_planet.global_position) - planet_radius_value
+	if altitude >= win_altitude_above_surface:
+		_handle_run_end(true, "escape_altitude")
+
+
 func _apply_mission_gravity() -> void:
 	var mission_generator := get_node_or_null("/root/MissionGenerator")
 	if mission_generator == null:
@@ -596,6 +622,10 @@ func _apply_ground_grip(delta: float) -> void:
 
 
 func _apply_thruster(delta: float, boost_pressed: bool) -> void:
+	if _permanent_thrusters_active:
+		apply_central_force(global_basis.y * _permanent_thruster_force)
+		_set_thruster_particles(true, 1.0)
+		return
 	if not boost_pressed:
 		_thruster_was_pressed = false
 		_set_thruster_particles(false, 0.0)
@@ -628,6 +658,9 @@ func _update_thruster_ui() -> void:
 		_thruster_bar = get_node_or_null("/root/Main/HUD/ThrusterPanel/ThrusterBar") as ProgressBar
 		if _thruster_bar == null:
 			return
+	if _permanent_thrusters_active:
+		_thruster_bar.value = 1.0
+		return
 	var remaining: float = _thruster_fuel / max(thruster_fuel_capacity, 0.01)
 	_thruster_bar.value = clampf(remaining, 0.0, 1.0)
 
@@ -778,6 +811,9 @@ func _handle_mining_input() -> void:
 		return
 	var collected_distance: float = _nearest_ore_dist
 	_ore_collected += gained
+	var state := get_node_or_null("/root/GameState")
+	if state != null and state.has_method("add_score"):
+		state.add_score(gained)
 	_nearest_ore.queue_free()
 	_nearest_ore = null
 	_nearest_ore_dist = INF
@@ -877,9 +913,14 @@ func _try_fire_weapon(cooldown: float, max_distance: float, color: Color, power_
 	var space_state := get_world_3d().direct_space_state
 	var query := PhysicsRayQueryParameters3D.create(start, end)
 	query.exclude = [self]
+	query.collide_with_areas = true
 	var hit: Dictionary = space_state.intersect_ray(query)
 	if not hit.is_empty():
 		end = hit["position"]
+		var collider: Object = hit["collider"]
+		if collider != null and collider.has_method("apply_damage"):
+			var damage: float = 16.0 if _has_big_betsy else 6.0
+			collider.apply_damage(damage)
 	_spawn_shot_visual(start, end, color)
 
 
@@ -900,6 +941,9 @@ func _update_auto_drill(delta: float) -> void:
 	if gained <= 0:
 		return
 	_ore_collected += gained
+	var state := get_node_or_null("/root/GameState")
+	if state != null and state.has_method("add_score"):
+		state.add_score(gained)
 	_nearest_ore.queue_free()
 	_nearest_ore = null
 	_nearest_ore_dist = INF
@@ -934,6 +978,19 @@ func _build_ore_direction_text() -> String:
 
 func _update_hint_timers(delta: float) -> void:
 	_ore_direction_hint_timer = maxf(0.0, _ore_direction_hint_timer - delta)
+
+
+func activate_permanent_thrusters() -> void:
+	_permanent_thrusters_active = true
+	_permanent_thruster_force = thruster_sustain_force + 220.0
+	var logger := get_node_or_null("/root/TestLogger")
+	if logger != null:
+		logger.log_event("jetpack_powerup_collected", "permanent_thrusters=true")
+
+
+func apply_external_knockback(force_vec: Vector3) -> void:
+	apply_central_impulse(force_vec)
+	sleeping = false
 
 
 func _spawn_shot_visual(start: Vector3, end: Vector3, color: Color) -> void:
@@ -998,7 +1055,7 @@ func _check_button_orientation_reset() -> void:
 	# Only trigger if upside-down enough for the roof button to hit the ground.
 	if contact_normal.dot(global_basis.y) > -0.45:
 		return
-	_reset_orientation_only()
+	_handle_run_end(false, "red_button")
 
 
 func _reset_orientation_only() -> void:

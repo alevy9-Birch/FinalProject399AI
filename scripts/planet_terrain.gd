@@ -498,3 +498,10 @@ func _position_rover_spawn(mission: Dictionary, macro: FastNoiseLite, ridge: Fas
 		var rb: RigidBody3D = rover as RigidBody3D
 		rb.linear_velocity = Vector3.ZERO
 		rb.angular_velocity = Vector3.ZERO
+	var powerup: Area3D = get_node_or_null("../JetpackPowerup") as Area3D
+	if powerup != null:
+		var tangent: Vector3 = up.cross(Vector3.RIGHT)
+		if tangent.length_squared() < 0.01:
+			tangent = up.cross(Vector3.FORWARD)
+		tangent = tangent.normalized()
+		powerup.global_position = global_position + surface + tangent * 34.0 + up * 4.0
