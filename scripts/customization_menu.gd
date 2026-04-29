@@ -24,13 +24,21 @@ extends Control
 @onready var _power_bar: ProgressBar = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/PowerBar
 @onready var _preview_root: Node3D = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot
 @onready var _preview_camera: Camera3D = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot/PreviewCamera
+@onready var _back_button: Button = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/BackButton
+@onready var _start_button: Button = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/StartButton
 
 var _preview_rover: RigidBody3D
 var _selected_slot_idx: int = 0
+var _ui_sfx_player: AudioStreamPlayer
+var _chassis_click_stream: AudioStreamWAV
+var _slot_click_stream: AudioStreamWAV
+var _ui_hover_stream: AudioStreamWAV
 
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	_setup_ui_audio()
+	_setup_hover_sfx_connections()
 	_setup_ui_from_state()
 	_spawn_preview_rover()
 	var logger := get_node_or_null("/root/TestLogger")
@@ -96,6 +104,7 @@ func _on_chassis_card_pressed(index: int) -> void:
 	var state := get_node_or_null("/root/GameState")
 	if state == null:
 		return
+	_play_ui_sfx(_chassis_click_stream)
 	state.selected_chassis_index = index
 	_variant_name_label.text = "Chassis: %s" % state.CHASSIS_NAMES[state.selected_chassis_index]
 	_refresh_all_ui()
@@ -108,6 +117,7 @@ func _on_slot_button_pressed(slot_idx: int) -> void:
 		return
 	if slot_idx >= state.get_unlocked_slot_count():
 		return
+	_play_ui_sfx(_slot_click_stream)
 	_selected_slot_idx = slot_idx
 	_selected_slot_label.text = "Slot %d" % (_selected_slot_idx + 1)
 	var current: String = state.selected_upgrades[_selected_slot_idx]
@@ -238,3 +248,82 @@ func _recolor_recursive(node: Node, color: Color) -> void:
 					duplicate_mat.albedo_color = color
 					mesh_node.material_override = duplicate_mat
 		_recolor_recursive(child, color)
+
+
+func _setup_ui_audio() -> void:
+	_ui_sfx_player = AudioStreamPlayer.new()
+	_ui_sfx_player.bus = "Master"
+	_ui_sfx_player.volume_db = -9.0
+	add_child(_ui_sfx_player)
+
+	# Soft, low UI "module select" tone.
+	_chassis_click_stream = _build_sci_fi_click_stream(330.0, 280.0, 0.075, 0.30)
+	# Slightly brighter companion tone for slot selection.
+	_slot_click_stream = _build_sci_fi_click_stream(410.0, 350.0, 0.065, 0.34)
+	# Subtle hover tick used across selection UI buttons.
+	_ui_hover_stream = _build_sci_fi_click_stream(500.0, 540.0, 0.045, 0.26)
+
+
+func _setup_hover_sfx_connections() -> void:
+	for button in _chassis_buttons:
+		if button != null and not button.mouse_entered.is_connected(_on_selection_button_hovered):
+			button.mouse_entered.connect(_on_selection_button_hovered)
+	for button in _slot_buttons:
+		if button != null and not button.mouse_entered.is_connected(_on_selection_button_hovered):
+			button.mouse_entered.connect(_on_selection_button_hovered)
+	for button in [_back_button, _start_button]:
+		if button != null and not button.mouse_entered.is_connected(_on_selection_button_hovered):
+			button.mouse_entered.connect(_on_selection_button_hovered)
+
+
+func _on_selection_button_hovered() -> void:
+	_play_ui_sfx(_ui_hover_stream)
+
+
+func _play_ui_sfx(stream: AudioStreamWAV) -> void:
+	if _ui_sfx_player == null or stream == null:
+		return
+	_ui_sfx_player.stream = stream
+	_ui_sfx_player.play()
+
+
+func _build_sci_fi_click_stream(start_freq: float, end_freq: float, duration_sec: float, brightness: float) -> AudioStreamWAV:
+	var sample_rate: int = 44100
+	var sample_count: int = int(duration_sec * sample_rate)
+	var pcm := PackedByteArray()
+	pcm.resize(sample_count * 2)
+
+	var phase: float = 0.0
+	var two_pi: float = PI * 2.0
+	var attack_samples: int = max(1, int(sample_count * 0.06))
+	var decay_start: int = int(sample_count * 0.28)
+
+	for i in range(sample_count):
+		var t: float = float(i) / float(max(1, sample_count - 1))
+		var freq: float = lerpf(start_freq, end_freq, t)
+		phase += two_pi * (freq / float(sample_rate))
+
+		var env: float = 1.0
+		if i < attack_samples:
+			env = float(i) / float(attack_samples)
+		elif i > decay_start:
+			var rem: float = float(sample_count - i) / float(max(1, sample_count - decay_start))
+			env = rem * rem
+
+		# Keep overtones tight to avoid laser-like pitch sweeps.
+		var fundamental: float = sin(phase)
+		var overtone: float = sin(phase * 1.52 + 0.17) * brightness
+		var body: float = sin(phase * 0.50) * 0.18
+		var sample: float = (fundamental * 0.74 + overtone * 0.16 + body * 0.10) * env
+		var sample_i16: int = int(clampf(sample, -1.0, 1.0) * 32767.0)
+
+		pcm[i * 2] = sample_i16 & 0xFF
+		pcm[i * 2 + 1] = (sample_i16 >> 8) & 0xFF
+
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	stream.data = pcm
+	return stream
