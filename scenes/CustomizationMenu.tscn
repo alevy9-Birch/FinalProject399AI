@@ -146,7 +146,7 @@ text = "Upgrade Slots"
 
 [node name="UpgradeHint" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
-text = "Click slot, then choose component"
+text = "Each slot has its own dropdown"
 
 [node name="SlotButtonsGrid" type="GridContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
@@ -154,27 +154,28 @@ columns = 2
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 
-[node name="SlotButton0" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
+[node name="SlotButton0" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
 custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
 text = "Slot 1"
 
-[node name="SlotButton1" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
+[node name="SlotButton1" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
 custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
 text = "Slot 2"
 
-[node name="SlotButton2" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
+[node name="SlotButton2" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
 custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
 text = "Slot 3"
 
-[node name="SlotButton3" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
+[node name="SlotButton3" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
 custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
 text = "Slot 4"
 
 [node name="SlotPickerRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 6
 
@@ -306,11 +307,10 @@ text = "Start Mission"
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card0/ChassisButton0" to="." method="_on_chassis_card_pressed" binds= [0]]
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card1/ChassisButton1" to="." method="_on_chassis_card_pressed" binds= [1]]
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card2/ChassisButton2" to="." method="_on_chassis_card_pressed" binds= [2]]
-[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton0" to="." method="_on_slot_button_pressed" binds= [0]]
-[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton1" to="." method="_on_slot_button_pressed" binds= [1]]
-[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton2" to="." method="_on_slot_button_pressed" binds= [2]]
-[connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton3" to="." method="_on_slot_button_pressed" binds= [3]]
-[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow/SlotUpgradeOption" to="." method="_on_slot_upgrade_option_selected"]
+[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton0" to="." method="_on_slot_dropdown_item_selected" binds= [0]]
+[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton1" to="." method="_on_slot_dropdown_item_selected" binds= [1]]
+[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton2" to="." method="_on_slot_dropdown_item_selected" binds= [2]]
+[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton3" to="." method="_on_slot_dropdown_item_selected" binds= [3]]
 [connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/ColorOption" to="." method="_on_color_option_item_selected"]
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/BackButton" to="." method="_on_back_button_pressed"]
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/StartButton" to="." method="_on_start_button_pressed"]

@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="BoxMesh" id="BoxMesh_a"]
+size = Vector3(0.6, 1.9, 0.6)
+
+[node name="RuinPillar" type="Node3D"]
+
+[node name="Pillar" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_a")
+position = Vector3(0, 0.95, 0)

@@ -7,14 +7,12 @@ extends Control
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card2/ChassisButton2
 ]
 @onready var _color_option: OptionButton = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/ColorOption
-@onready var _slot_buttons: Array[Button] = [
+@onready var _slot_buttons: Array[OptionButton] = [
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton0,
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton1,
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton2,
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton3
 ]
-@onready var _slot_upgrade_option: OptionButton = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow/SlotUpgradeOption
-@onready var _selected_slot_label: Label = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow/SelectedSlotLabel
 @onready var _upgrade_effects: RichTextLabel = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/UpgradeEffects
 @onready var _stats_summary: Label = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/StatsSummary
 @onready var _speed_bar: ProgressBar = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/SpeedBar
@@ -28,7 +26,6 @@ extends Control
 @onready var _start_button: Button = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/StartButton
 
 var _preview_rover: RigidBody3D
-var _selected_slot_idx: int = 0
 var _ui_sfx_player: AudioStreamPlayer
 var _chassis_click_stream: AudioStreamWAV
 var _slot_click_stream: AudioStreamWAV
@@ -62,9 +59,6 @@ func _setup_ui_from_state() -> void:
 	for color_name in state.COLOR_NAMES:
 		_color_option.add_item(color_name)
 	_color_option.selected = clampi(state.selected_color_index, 0, max(0, _color_option.item_count - 1))
-	_slot_upgrade_option.clear()
-	for upgrade_name in state.UPGRADE_NAMES:
-		_slot_upgrade_option.add_item(upgrade_name)
 	_refresh_all_ui()
 
 
@@ -111,30 +105,15 @@ func _on_chassis_card_pressed(index: int) -> void:
 	_apply_selection_to_rover(_preview_rover)
 
 
-func _on_slot_button_pressed(slot_idx: int) -> void:
+func _on_slot_dropdown_item_selected(index: int, slot_idx: int) -> void:
 	var state := get_node_or_null("/root/GameState")
 	if state == null:
 		return
 	if slot_idx >= state.get_unlocked_slot_count():
 		return
+	var selected_upgrade: String = _slot_buttons[slot_idx].get_item_text(index)
+	state.set_upgrade_in_slot(slot_idx, selected_upgrade)
 	_play_ui_sfx(_slot_click_stream)
-	_selected_slot_idx = slot_idx
-	_selected_slot_label.text = "Slot %d" % (_selected_slot_idx + 1)
-	var current: String = state.selected_upgrades[_selected_slot_idx]
-	for i in range(_slot_upgrade_option.item_count):
-		if _slot_upgrade_option.get_item_text(i) == current:
-			_slot_upgrade_option.selected = i
-			break
-
-
-func _on_slot_upgrade_option_selected(index: int) -> void:
-	var state := get_node_or_null("/root/GameState")
-	if state == null:
-		return
-	if _selected_slot_idx >= state.get_unlocked_slot_count():
-		return
-	var selected_upgrade: String = _slot_upgrade_option.get_item_text(index)
-	state.set_upgrade_in_slot(_selected_slot_idx, selected_upgrade)
 	_refresh_all_ui()
 
 
@@ -152,15 +131,22 @@ func _refresh_slot_buttons() -> void:
 	if state == null:
 		return
 	var unlocked: int = state.get_unlocked_slot_count()
-	_selected_slot_idx = clampi(_selected_slot_idx, 0, max(0, unlocked - 1))
 	for i in range(_slot_buttons.size()):
+		_slot_buttons[i].clear()
 		if i >= unlocked:
-			_slot_buttons[i].text = "LOCKED"
 			_slot_buttons[i].disabled = true
+			_slot_buttons[i].add_item("LOCKED")
+			_slot_buttons[i].selected = 0
 		else:
 			_slot_buttons[i].disabled = false
-			_slot_buttons[i].text = "Slot %d\n%s" % [i + 1, state.selected_upgrades[i]]
-	_selected_slot_label.text = "Slot %d" % (_selected_slot_idx + 1)
+			for upgrade_name in state.UPGRADE_NAMES:
+				_slot_buttons[i].add_item("Slot %d: %s" % [i + 1, upgrade_name])
+			var selected_upgrade: String = state.selected_upgrades[i]
+			for idx in range(_slot_buttons[i].item_count):
+				var text: String = _slot_buttons[i].get_item_text(idx)
+				if text.ends_with(selected_upgrade):
+					_slot_buttons[i].selected = idx
+					break
 
 
 func _refresh_stats() -> void:

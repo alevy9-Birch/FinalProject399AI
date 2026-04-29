@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="BoxMesh" id="BoxMesh_a"]
+size = Vector3(0.75, 0.3, 0.45)
+
+[node name="SalvageHeap" type="Node3D"]
+
+[node name="ChunkA" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_a")
+position = Vector3(-0.32, 0.15, 0.18)
+rotation = Vector3(0.2, 0.35, 0.05)
+
+[node name="ChunkB" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_a")
+position = Vector3(0.28, 0.15, -0.21)
+rotation = Vector3(-0.1, -0.42, 0.08)
+
+[node name="ChunkC" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_a")
+position = Vector3(0.04, 0.28, 0.04)
+scale = Vector3(0.75, 0.8, 0.65)
+rotation = Vector3(0.12, 0.18, -0.24)

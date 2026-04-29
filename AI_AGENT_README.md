@@ -8,6 +8,7 @@ This file is for future agents who need to quickly continue work on this reposit
 - Genre: physics rover mission prototype
 - Core flow: `MainMenu -> CustomizationMenu -> Main gameplay`
 - Current focus: feature correctness and gameplay readability over final visuals
+- Biome reference: `Biomes.md` (planet identity + unique prop/gameplay traits)
 
 ## Key Scenes
 

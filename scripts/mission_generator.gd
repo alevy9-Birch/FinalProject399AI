@@ -307,15 +307,15 @@ func _roll_prop_profile(rng: RandomNumberGenerator, planet_type: int) -> int:
 func _gravity_multiplier_for_class(gravity_class: int) -> float:
 	match gravity_class:
 		GravityClass.MICRO_G:
-			return 0.35
+			return 0.5
 		GravityClass.LOW_G:
-			return 0.65
+			return 0.75
 		GravityClass.EARTHLIKE:
 			return 1.0
 		GravityClass.HEAVY_G:
-			return 1.35
+			return 1.5
 		GravityClass.CRUSHING:
-			return 1.8
+			return 2.0
 		_:
 			return 1.0
 

@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_a"]
+top_radius = 2.2
+bottom_radius = 2.45
+height = 0.08
+
+[node name="CraterDecal" type="Node3D"]
+
+[node name="Ring" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_a")
+position = Vector3(0, 0.04, 0)

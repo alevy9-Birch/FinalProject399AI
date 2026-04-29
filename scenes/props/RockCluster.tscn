@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="SphereMesh" id="SphereMesh_a"]
+radius = 0.6
+height = 1.2
+
+[node name="RockCluster" type="Node3D"]
+
+[node name="RockA" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_a")
+position = Vector3(-0.35, 0.48, 0.2)
+scale = Vector3(1.1, 0.9, 1.0)
+
+[node name="RockB" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_a")
+position = Vector3(0.42, 0.62, -0.24)
+scale = Vector3(0.9, 1.15, 0.95)
+
+[node name="RockC" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_a")
+position = Vector3(0.02, 0.36, 0.05)
+scale = Vector3(0.75, 0.65, 0.72)

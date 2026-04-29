@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="SphereMesh" id="SphereMesh_a"]
+radius = 0.35
+height = 0.7
+
+[node name="ToxicPod" type="Node3D"]
+
+[node name="Pod" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_a")
+position = Vector3(0, 0.35, 0)

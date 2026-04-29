@@ -47,29 +47,29 @@ func _spawn_minion_group() -> void:
 		return
 	for i in range(3):
 		var dir := Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)).normalized()
-		var surface: Vector3 = _planet.global_position + dir * (_planet_radius + randf_range(8.0, 18.0))
 		var actor := _new_actor(0)
-		actor.global_position = surface + Vector3(randf_range(-4, 4), randf_range(-1, 1), randf_range(-4, 4))
+		var spawn_point: Vector3 = _resolve_planet_spawn_point(dir, 320.0, _enemy_surface_offset(), [actor, _rover])
+		actor.global_position = spawn_point
 
 
 func _spawn_turret() -> void:
 	if _planet == null:
 		return
 	var dir := Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)).normalized()
-	var surface: Vector3 = _planet.global_position + dir * (_planet_radius + randf_range(4.0, 8.0))
 	var actor := _new_actor(1)
-	actor.global_position = surface
+	actor.global_position = _resolve_planet_spawn_point(dir, 300.0, 1.0, [actor, _rover])
 
 
 func _spawn_ufo() -> void:
 	if _planet == null:
 		return
 	var up: Vector3 = (_rover.global_position - _planet.global_position).normalized()
+	var base_point: Vector3 = _resolve_planet_spawn_point(up, 320.0, 1.0, [_rover])
 	var tangent := up.cross(Vector3.RIGHT)
 	if tangent.length_squared() < 0.01:
 		tangent = up.cross(Vector3.FORWARD)
 	tangent = tangent.normalized()
-	var spawn_pos: Vector3 = _rover.global_position + up * 80.0 + tangent * randf_range(-24.0, 24.0)
+	var spawn_pos: Vector3 = base_point + up * 78.0 + tangent * randf_range(-24.0, 24.0)
 	var actor := _new_actor(2)
 	actor.global_position = spawn_pos
 
@@ -80,3 +80,16 @@ func _new_actor(kind: int) -> Area3D:
 	add_child(actor)
 	actor.setup(kind, _rover, _planet, _planet_radius)
 	return actor
+
+
+func _resolve_planet_spawn_point(dir: Vector3, cast_extra: float, offset: float, exclude: Array = []) -> Vector3:
+	if _planet != null and _planet.has_method("get_surface_spawn_from_direction"):
+		var info: Dictionary = _planet.get_surface_spawn_from_direction(dir, cast_extra, offset, exclude)
+		return info.get("point", _planet.global_position + dir.normalized() * (_planet_radius + offset))
+	return _planet.global_position + dir.normalized() * (_planet_radius + offset)
+
+
+func _enemy_surface_offset() -> float:
+	if _planet != null and _planet.has_method("get"):
+		return float(_planet.get("enemy_spawn_surface_offset"))
+	return 24.0

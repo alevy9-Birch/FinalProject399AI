@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_a"]
+top_radius = 0.06
+bottom_radius = 0.2
+height = 2.2
+radial_segments = 6
+
+[node name="Crystal" type="Node3D"]
+
+[node name="CrystalMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_a")
+position = Vector3(0, 1.1, 0)

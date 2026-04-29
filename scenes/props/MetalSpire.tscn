@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_a"]
+top_radius = 0.03
+bottom_radius = 0.2
+height = 3.6
+radial_segments = 5
+
+[node name="MetalSpire" type="Node3D"]
+
+[node name="Spire" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_a")
+position = Vector3(0, 1.8, 0)

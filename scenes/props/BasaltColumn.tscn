@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_a"]
+top_radius = 0.12
+bottom_radius = 0.14
+height = 2.4
+radial_segments = 6
+
+[node name="BasaltColumn" type="Node3D"]
+
+[node name="ColumnA" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_a")
+position = Vector3(-0.22, 1.2, 0.18)
+
+[node name="ColumnB" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_a")
+position = Vector3(0.26, 1.0, -0.16)
+scale = Vector3(0.85, 0.8, 0.85)
+
+[node name="ColumnC" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_a")
+position = Vector3(0.04, 1.38, 0.04)
+scale = Vector3(1.2, 1.15, 1.2)
