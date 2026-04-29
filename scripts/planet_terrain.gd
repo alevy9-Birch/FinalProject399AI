@@ -8,13 +8,22 @@ const WORLD_CHECKER_SHADER := """
 shader_type spatial;
 render_mode cull_back, depth_draw_opaque;
 
-uniform vec4 color_a : source_color = vec4(0.98, 0.98, 0.98, 1.0);
-uniform vec4 color_b : source_color = vec4(0.04, 0.04, 0.04, 1.0);
-uniform vec4 line_color : source_color = vec4(1.0, 0.2, 0.2, 1.0);
-uniform float tile_world_size = 220.0;
-uniform float line_width = 0.04;
-uniform float triplanar_sharpness = 6.0;
+uniform vec4 color_a : source_color = vec4(0.65, 0.65, 0.65, 1.0);
+uniform vec4 color_b : source_color = vec4(0.2, 0.2, 0.2, 1.0);
+uniform vec3 planet_center = vec3(0.0, 0.0, 0.0);
+uniform float tile_world_size = 32.0;
+uniform float triplanar_sharpness = 3.2;
 uniform float roughness_value = 0.86;
+uniform float noise_contrast = 1.35;
+uniform float noise_mix_strength = 1.0;
+
+varying vec3 v_world_pos;
+varying vec3 v_world_normal;
+
+void vertex() {
+	v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	v_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
+}
 
 vec2 world_plane_uv(vec3 wp, int axis) {
 	if (axis == 0) {
@@ -26,40 +35,53 @@ vec2 world_plane_uv(vec3 wp, int axis) {
 	return wp.xy / tile_world_size;
 }
 
-float checker(vec2 uv) {
-	vec2 g = floor(uv);
-	return mod(g.x + g.y, 2.0);
+float hash12(vec2 p) {
+	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+	p3 += dot(p3, p3.yzx + 33.33);
+	return fract((p3.x + p3.y) * p3.z);
 }
 
-float grid_line(vec2 uv) {
+float value_noise(vec2 uv) {
+	vec2 i = floor(uv);
 	vec2 f = fract(uv);
-	vec2 dist = min(f, 1.0 - f);
-	float min_dist = min(dist.x, dist.y);
-	return 1.0 - smoothstep(0.0, line_width, min_dist);
+	vec2 s = f * f * (3.0 - 2.0 * f);
+	float a = hash12(i);
+	float b = hash12(i + vec2(1.0, 0.0));
+	float c = hash12(i + vec2(0.0, 1.0));
+	float d = hash12(i + vec2(1.0, 1.0));
+	return mix(mix(a, b, s.x), mix(c, d, s.x), s.y);
+}
+
+float fbm(vec2 uv) {
+	float v = 0.0;
+	float amp = 0.5;
+	float freq = 1.0;
+	for (int i = 0; i < 4; i++) {
+		v += value_noise(uv * freq) * amp;
+		freq *= 2.0;
+		amp *= 0.5;
+	}
+	return v;
 }
 
 void fragment() {
-	vec3 n = normalize(abs(NORMAL));
+	vec3 radial_n = normalize(v_world_pos - planet_center);
+	vec3 n = abs(normalize(mix(v_world_normal, radial_n, 0.8)));
 	vec3 weights = pow(n, vec3(triplanar_sharpness));
 	weights /= max(dot(weights, vec3(1.0)), 0.0001);
 
-	vec3 wp = WORLD_POSITION;
+	vec3 wp = v_world_pos;
 	vec2 uv_x = world_plane_uv(wp, 0);
 	vec2 uv_y = world_plane_uv(wp, 1);
 	vec2 uv_z = world_plane_uv(wp, 2);
 
-	float c_x = checker(uv_x);
-	float c_y = checker(uv_y);
-	float c_z = checker(uv_z);
-	float checker_mix = c_x * weights.x + c_y * weights.y + c_z * weights.z;
-
-	float l_x = grid_line(uv_x);
-	float l_y = grid_line(uv_y);
-	float l_z = grid_line(uv_z);
-	float line_mix = l_x * weights.x + l_y * weights.y + l_z * weights.z;
-
-	vec3 base = mix(color_a.rgb, color_b.rgb, checker_mix);
-	ALBEDO = mix(base, line_color.rgb, clamp(line_mix, 0.0, 1.0));
+	float n_x = fbm(uv_x);
+	float n_y = fbm(uv_y);
+	float n_z = fbm(uv_z);
+	float noise_value = n_x * weights.x + n_y * weights.y + n_z * weights.z;
+	noise_value = clamp(pow(noise_value, noise_contrast), 0.0, 1.0);
+	vec3 base = mix(color_b.rgb, color_a.rgb, noise_value);
+	ALBEDO = mix(color_b.rgb, base, noise_mix_strength);
 	ROUGHNESS = roughness_value;
 }
 """
@@ -280,6 +302,12 @@ func get_surface_spawn_from_direction(dir: Vector3, cast_extra: float = 220.0, s
 	query.exclude = exclude
 	query.collide_with_areas = false
 	query.collide_with_bodies = true
+	if not is_inside_tree():
+		return {
+			"ok": false,
+			"point": global_position + d * (planet_radius + spawn_offset),
+			"normal": d
+		}
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
 		return {
@@ -316,13 +344,14 @@ func _spawn_props(mission: Dictionary, macro: FastNoiseLite, ridge: FastNoiseLit
 	var prop_pool: Dictionary = _build_prop_pool_for_planet(planet_type, prop_profile)
 	var prop_kinds: PackedStringArray = prop_pool.get("kinds", PackedStringArray(["rock_cluster"]))
 	var prop_weights: Array[float] = prop_pool.get("weights", [1.0])
+	var biome_logic: Dictionary = _biome_prop_spawn_logic(planet_type)
+	var cluster_count: int = int(biome_logic.get("cluster_count", 0))
+	var cluster_dirs: Array[Vector3] = []
+	for ci in range(cluster_count):
+		cluster_dirs.append(_sample_random_surface_direction(rng))
 
 	for i in range(prop_count):
-		var dir := Vector3(
-			rng.randf_range(-1.0, 1.0),
-			rng.randf_range(-1.0, 1.0),
-			rng.randf_range(-1.0, 1.0)
-		).normalized()
+		var dir: Vector3 = _sample_prop_direction_for_biome(planet_type, rng, biome_logic, cluster_dirs)
 		if dir.length_squared() < 0.001:
 			continue
 		var spawn_info: Dictionary = get_surface_spawn_from_direction(dir, 180.0, ground_spawn_surface_offset)
@@ -330,12 +359,64 @@ func _spawn_props(mission: Dictionary, macro: FastNoiseLite, ridge: FastNoiseLit
 		var prop := _build_prop_by_name(kind, rng)
 		if prop == null:
 			continue
-		prop.global_position = spawn_info.get("point", global_position + dir * planet_radius)
 		var normal: Vector3 = spawn_info.get("normal", dir)
 		var tangent_ref: Vector3 = Vector3.RIGHT if absf(normal.dot(Vector3.RIGHT)) < 0.95 else Vector3.FORWARD
+		_props_root.add_child(prop)
+		prop.global_position = spawn_info.get("point", global_position + dir * planet_radius)
 		prop.basis = Basis.looking_at((normal.cross(tangent_ref)).normalized(), normal)
 		prop.rotate_object_local(Vector3.UP, rng.randf_range(-PI, PI))
-		_props_root.add_child(prop)
+func _sample_random_surface_direction(rng: RandomNumberGenerator) -> Vector3:
+	var dir := Vector3(
+		rng.randf_range(-1.0, 1.0),
+		rng.randf_range(-1.0, 1.0),
+		rng.randf_range(-1.0, 1.0)
+	).normalized()
+	return Vector3.UP if dir.length_squared() < 0.0001 else dir
+
+
+func _biome_prop_spawn_logic(planet_type: int) -> Dictionary:
+	match planet_type:
+		0: # Asteroid rubble
+			return {"cluster_count": 3, "cluster_pull": 0.55, "equator_bias": 0.0, "polar_exclusion": 0.0}
+		1: # Cratered moon
+			return {"cluster_count": 4, "cluster_pull": 0.5, "equator_bias": 0.25, "polar_exclusion": 0.05}
+		2: # Metallic core
+			return {"cluster_count": 6, "cluster_pull": 0.68, "equator_bias": 0.1, "polar_exclusion": 0.0}
+		3: # Volcanic shard
+			return {"cluster_count": 5, "cluster_pull": 0.6, "equator_bias": 0.45, "polar_exclusion": 0.18}
+		4: # Ice dustball
+			return {"cluster_count": 4, "cluster_pull": 0.52, "equator_bias": -0.35, "polar_exclusion": 0.0}
+		5: # Habitable world
+			return {"cluster_count": 7, "cluster_pull": 0.72, "equator_bias": 0.62, "polar_exclusion": 0.12}
+		6: # Desert dune
+			return {"cluster_count": 5, "cluster_pull": 0.64, "equator_bias": 0.78, "polar_exclusion": 0.24}
+		7: # Toxic swamp
+			return {"cluster_count": 8, "cluster_pull": 0.76, "equator_bias": 0.35, "polar_exclusion": 0.1}
+		_:
+			return {"cluster_count": 0, "cluster_pull": 0.0, "equator_bias": 0.0, "polar_exclusion": 0.0}
+
+
+func _sample_prop_direction_for_biome(planet_type: int, rng: RandomNumberGenerator, biome_logic: Dictionary, cluster_dirs: Array[Vector3]) -> Vector3:
+	var dir: Vector3 = _sample_random_surface_direction(rng)
+	var equator_bias: float = clampf(float(biome_logic.get("equator_bias", 0.0)), -1.0, 1.0)
+	if absf(equator_bias) > 0.001:
+		var equator_dir: Vector3 = Vector3(dir.x, 0.0, dir.z).normalized()
+		if equator_dir.length_squared() < 0.0001:
+			equator_dir = Vector3.RIGHT
+		if equator_bias > 0.0:
+			dir = dir.slerp(equator_dir, absf(equator_bias) * 0.45)
+		else:
+			var pole: Vector3 = Vector3.UP if rng.randf() < 0.5 else Vector3.DOWN
+			dir = dir.slerp(pole, absf(equator_bias) * 0.4)
+	var cluster_pull: float = clampf(float(biome_logic.get("cluster_pull", 0.0)), 0.0, 1.0)
+	if cluster_pull > 0.01 and not cluster_dirs.is_empty():
+		var anchor: Vector3 = cluster_dirs[rng.randi_range(0, cluster_dirs.size() - 1)]
+		dir = dir.slerp(anchor, cluster_pull * rng.randf_range(0.45, 0.95))
+	var polar_exclusion: float = clampf(float(biome_logic.get("polar_exclusion", 0.0)), 0.0, 0.98)
+	if polar_exclusion > 0.001 and absf(dir.y) > (1.0 - polar_exclusion):
+		dir.y = signf(dir.y) * (1.0 - polar_exclusion)
+	return dir.normalized()
+
 
 
 func _spawn_ore_deposits(mission: Dictionary, macro: FastNoiseLite, ridge: FastNoiseLite, detail: FastNoiseLite) -> void:
@@ -361,13 +442,13 @@ func _spawn_ore_deposits(mission: Dictionary, macro: FastNoiseLite, ridge: FastN
 		ore.name = "OreDeposit_%d" % i
 		ore.set_script(ORE_DEPOSIT_SCRIPT)
 		ore.set("ore_value", rng.randi_range(yield_range.x, max(yield_range.x, yield_range.y)))
-		ore.global_position = spawn_info.get("point", global_position + dir * planet_radius)
 		var ore_normal: Vector3 = spawn_info.get("normal", dir)
 		var ore_tangent_ref: Vector3 = Vector3.RIGHT if absf(ore_normal.dot(Vector3.RIGHT)) < 0.95 else Vector3.FORWARD
-		ore.basis = Basis.looking_at((ore_normal.cross(ore_tangent_ref)).normalized(), ore_normal)
 		ore.add_to_group("ore_deposit")
 		ore.add_child(_make_ore_visual(rng))
 		_ore_root.add_child(ore)
+		ore.global_position = spawn_info.get("point", global_position + dir * planet_radius)
+		ore.basis = Basis.looking_at((ore_normal.cross(ore_tangent_ref)).normalized(), ore_normal)
 
 
 func _make_ore_visual(rng: RandomNumberGenerator) -> MeshInstance3D:
@@ -739,46 +820,92 @@ func _apply_surface_material(mission: Dictionary) -> void:
 	shader_material.shader = shader
 	var planet_type: int = int(mission.get("planet_type", 0))
 	var mission_seed: int = int(mission.get("mission_seed", 1))
-	var roughness_value: float = 0.88
-	var tile_world_size: float = 220.0
-	var line_color: Color = Color(1.0, 0.22, 0.22, 1.0)
-	var base_a: Color = Color(0.98, 0.98, 0.98, 1.0)
-	var base_b: Color = Color(0.04, 0.04, 0.04, 1.0)
-	match planet_type:
-		0:
-			line_color = Color(0.9, 0.66, 0.22, 1.0)
-			tile_world_size = 230.0
-		1:
-			line_color = Color(0.62, 0.75, 1.0, 1.0)
-			tile_world_size = 215.0
-		2:
-			line_color = Color(0.62, 1.0, 1.0, 1.0)
-			tile_world_size = 245.0
-			roughness_value = 0.72
-		3:
-			line_color = Color(1.0, 0.45, 0.12, 1.0)
-			tile_world_size = 205.0
-		4:
-			line_color = Color(0.58, 0.85, 1.0, 1.0)
-			tile_world_size = 260.0
-		5:
-			line_color = Color(0.45, 0.95, 0.42, 1.0)
-			tile_world_size = 220.0
-		6:
-			line_color = Color(0.96, 0.82, 0.25, 1.0)
-			tile_world_size = 210.0
-		7:
-			line_color = Color(0.45, 1.0, 0.35, 1.0)
-			tile_world_size = 200.0
+	var tex_profile: Dictionary = _biome_texture_profile(planet_type)
+	var roughness_value: float = float(tex_profile.get("roughness", 0.88))
+	var tile_world_size: float = float(tex_profile.get("tile_world_size", 32.0))
+	var base_a: Color = tex_profile.get("base_a", Color(0.62, 0.62, 0.62, 1.0))
+	var base_b: Color = tex_profile.get("base_b", Color(0.2, 0.2, 0.2, 1.0))
+	var noise_contrast: float = float(tex_profile.get("noise_contrast", 1.35))
 	var jitter := (float((mission_seed % 13) - 6)) * 0.004
 	base_a = base_a.lightened(jitter)
 	base_b = base_b.lightened(-jitter * 0.5)
 	shader_material.set_shader_parameter("color_a", base_a)
 	shader_material.set_shader_parameter("color_b", base_b)
-	shader_material.set_shader_parameter("line_color", line_color)
+	shader_material.set_shader_parameter("planet_center", global_position)
 	shader_material.set_shader_parameter("tile_world_size", tile_world_size)
+	shader_material.set_shader_parameter("noise_contrast", noise_contrast)
 	shader_material.set_shader_parameter("roughness_value", roughness_value)
 	_mesh_instance.material_override = shader_material
+
+
+func _biome_texture_profile(planet_type: int) -> Dictionary:
+	match planet_type:
+		0:
+			return {
+				"base_a": Color(0.48, 0.42, 0.34, 1.0),
+				"base_b": Color(0.22, 0.19, 0.14, 1.0),
+				"tile_world_size": 28.0,
+				"noise_contrast": 1.25,
+				"roughness": 0.9
+			}
+		1:
+			return {
+				"base_a": Color(0.5, 0.5, 0.54, 1.0),
+				"base_b": Color(0.24, 0.24, 0.28, 1.0),
+				"tile_world_size": 30.0,
+				"noise_contrast": 1.28,
+				"roughness": 0.9
+			}
+		2:
+			return {
+				"base_a": Color(0.52, 0.58, 0.62, 1.0),
+				"base_b": Color(0.2, 0.24, 0.28, 1.0),
+				"tile_world_size": 34.0,
+				"noise_contrast": 1.3,
+				"roughness": 0.72
+			}
+		3:
+			return {
+				"base_a": Color(0.56, 0.26, 0.18, 1.0),
+				"base_b": Color(0.24, 0.1, 0.08, 1.0),
+				"tile_world_size": 26.0,
+				"noise_contrast": 1.5,
+				"roughness": 0.85
+			}
+		4:
+			return {
+				"base_a": Color(0.72, 0.82, 0.9, 1.0),
+				"base_b": Color(0.36, 0.46, 0.56, 1.0),
+				"tile_world_size": 36.0,
+				"noise_contrast": 1.2,
+				"roughness": 0.83
+			}
+		5:
+			return {
+				"base_a": Color(0.34, 0.52, 0.34, 1.0),
+				"base_b": Color(0.16, 0.28, 0.16, 1.0),
+				"tile_world_size": 30.0,
+				"noise_contrast": 1.24,
+				"roughness": 0.9
+			}
+		6:
+			return {
+				"base_a": Color(0.68, 0.56, 0.32, 1.0),
+				"base_b": Color(0.34, 0.25, 0.12, 1.0),
+				"tile_world_size": 28.0,
+				"noise_contrast": 1.4,
+				"roughness": 0.93
+			}
+		7:
+			return {
+				"base_a": Color(0.28, 0.48, 0.25, 1.0),
+				"base_b": Color(0.14, 0.27, 0.13, 1.0),
+				"tile_world_size": 26.0,
+				"noise_contrast": 1.45,
+				"roughness": 0.88
+			}
+		_:
+			return {}
 
 
 func _position_rover_spawn(mission: Dictionary, macro: FastNoiseLite, ridge: FastNoiseLite, detail: FastNoiseLite) -> void:

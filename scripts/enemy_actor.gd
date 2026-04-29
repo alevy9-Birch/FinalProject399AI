@@ -18,6 +18,10 @@ var noise_phase: float = 0.0
 var drift_axis: Vector3 = Vector3.UP
 var warning_timer: float = 0.0
 var warning_line: MeshInstance3D
+var _max_health: float = 10.0
+var _health_bar_root: Node3D
+var _health_bar_fill: MeshInstance3D
+var _health_bar_bg: MeshInstance3D
 
 
 func setup(kind: int, rover_ref: RigidBody3D, planet_ref: Node3D, planet_radius: float) -> void:
@@ -35,6 +39,7 @@ func setup(kind: int, rover_ref: RigidBody3D, planet_ref: Node3D, planet_radius:
 		EnemyType.UFO:
 			health = 26.0
 			fire_timer = randf_range(2.8, 4.5)
+	_max_health = health
 	noise_phase = randf_range(0.0, TAU)
 	drift_axis = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)).normalized()
 	_build_visuals()
@@ -42,11 +47,14 @@ func setup(kind: int, rover_ref: RigidBody3D, planet_ref: Node3D, planet_radius:
 
 func apply_damage(amount: float) -> void:
 	health -= amount
+	_update_health_bar()
 	if health <= 0.0:
 		queue_free()
 
 
 func _physics_process(delta: float) -> void:
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
 	if rover == null or not is_instance_valid(rover):
 		return
 	match enemy_type:
@@ -56,6 +64,7 @@ func _physics_process(delta: float) -> void:
 			_update_turret(delta)
 		EnemyType.UFO:
 			_update_ufo(delta)
+	_update_health_bar_facing()
 
 
 func _update_minion(delta: float) -> void:
@@ -66,8 +75,12 @@ func _update_minion(delta: float) -> void:
 	global_position += (to_player.normalized() * 5.6 + noisy) * delta
 	fire_timer -= delta
 	if fire_timer <= 0.0:
-		fire_timer = randf_range(1.4, 2.8)
-		_fire_projectile((rover.global_position - global_position).normalized(), 14.0, 10.0, Color(0.85, 0.45, 0.45, 1.0))
+		if _has_line_of_sight_to_rover(95.0):
+			fire_timer = randf_range(1.4, 2.8)
+			_fire_projectile((rover.global_position - global_position).normalized(), 14.0, 16.0, Color(0.85, 0.45, 0.45, 1.0))
+			_spawn_muzzle_flash(Color(1.0, 0.55, 0.45, 1.0))
+		else:
+			fire_timer = 0.35
 
 
 func _update_turret(delta: float) -> void:
@@ -83,11 +96,14 @@ func _update_turret(delta: float) -> void:
 		return
 	fire_timer -= delta
 	if fire_timer <= 0.0:
-		fire_timer = randf_range(3.0, 5.2)
-		warning_timer = 1.0
-		if warning_line != null:
-			warning_line.visible = true
-			_update_warning_line()
+		if _has_line_of_sight_to_rover(150.0):
+			fire_timer = randf_range(3.0, 5.2)
+			warning_timer = 1.0
+			if warning_line != null:
+				warning_line.visible = true
+				_update_warning_line()
+		else:
+			fire_timer = 0.45
 
 
 func _update_ufo(delta: float) -> void:
@@ -96,13 +112,19 @@ func _update_ufo(delta: float) -> void:
 	global_position = global_position.lerp(desired_pos, clampf(delta * 0.48, 0.0, 1.0))
 	fire_timer -= delta
 	if fire_timer <= 0.0:
-		fire_timer = randf_range(3.5, 5.2)
-		var dir: Vector3 = (rover.global_position - global_position).normalized()
-		_fire_projectile(dir, 9.0, 34.0, Color(0.5, 0.95, 0.95, 1.0))
+		if _has_line_of_sight_to_rover(180.0):
+			fire_timer = randf_range(3.5, 5.2)
+			var dir: Vector3 = (rover.global_position - global_position).normalized()
+			_fire_projectile(dir, 9.0, 42.0, Color(0.5, 0.95, 0.95, 1.0))
+			_spawn_muzzle_flash(Color(0.6, 1.0, 1.0, 1.0))
+		else:
+			fire_timer = 0.55
 
 
 func _fire_turret_hitscan() -> void:
-	if rover == null:
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
+	if rover == null or not is_instance_valid(rover):
 		return
 	var start: Vector3 = global_position + Vector3.UP * 1.4
 	var target: Vector3 = rover.global_position
@@ -110,14 +132,20 @@ func _fire_turret_hitscan() -> void:
 	query.exclude = [self]
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
 	if not hit.is_empty() and hit["collider"] == rover:
-		rover.apply_external_knockback((target - start).normalized() * 58.0)
+		rover.apply_external_knockback((target - start).normalized() * 70.0)
+		_spawn_muzzle_flash(Color(1.0, 0.25, 0.25, 1.0))
 
 
 func _fire_projectile(dir: Vector3, speed: float, knockback: float, color: Color) -> void:
+	if not is_inside_tree() or is_queued_for_deletion():
+		return
+	if get_tree() == null or get_tree().current_scene == null:
+		return
 	var proj := Area3D.new()
 	proj.name = "EnemyProjectile"
 	proj.set_script(EnemyProjectileScript)
-	proj.global_position = global_position + dir * 1.3
+	var origin: Vector3 = global_position
+	proj.global_position = origin + dir * 1.3
 	proj.velocity = dir * speed
 	proj.knockback_force = knockback
 	proj.owner_enemy = self
@@ -188,6 +216,8 @@ func _build_visuals() -> void:
 	collision.shape = sphere
 	add_child(collision)
 	add_child(mesh)
+	_build_health_bar()
+	_update_health_bar()
 
 
 func _update_warning_line() -> void:
@@ -213,3 +243,85 @@ func _make_enemy_mat(color: Color) -> StandardMaterial3D:
 	mat.emission = color * 0.5
 	mat.emission_energy_multiplier = 1.1
 	return mat
+
+
+func _has_line_of_sight_to_rover(max_distance: float) -> bool:
+	if rover == null or not is_instance_valid(rover):
+		return false
+	var start: Vector3 = global_position + Vector3.UP * 0.8
+	var end: Vector3 = rover.global_position
+	if start.distance_to(end) > max_distance:
+		return false
+	var query := PhysicsRayQueryParameters3D.create(start, end)
+	query.exclude = [self]
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	return (not hit.is_empty()) and hit["collider"] == rover
+
+
+func _build_health_bar() -> void:
+	if _health_bar_root != null and is_instance_valid(_health_bar_root):
+		_health_bar_root.queue_free()
+	_health_bar_root = Node3D.new()
+	_health_bar_root.position = Vector3(0, 2.2, 0)
+	var bar_mesh := QuadMesh.new()
+	bar_mesh.size = Vector2(1.6, 0.16)
+	_health_bar_bg = MeshInstance3D.new()
+	_health_bar_bg.mesh = bar_mesh
+	var bg_mat := StandardMaterial3D.new()
+	bg_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	bg_mat.albedo_color = Color(0.1, 0.06, 0.06, 0.9)
+	_health_bar_bg.material_override = bg_mat
+	_health_bar_fill = MeshInstance3D.new()
+	_health_bar_fill.mesh = bar_mesh
+	_health_bar_fill.position = Vector3(-0.0, 0.0, -0.01)
+	var fill_mat := StandardMaterial3D.new()
+	fill_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	fill_mat.albedo_color = Color(0.95, 0.22, 0.22, 0.95)
+	fill_mat.emission_enabled = true
+	fill_mat.emission = Color(0.9, 0.2, 0.2, 1.0)
+	fill_mat.emission_energy_multiplier = 0.8
+	_health_bar_fill.material_override = fill_mat
+	_health_bar_root.add_child(_health_bar_bg)
+	_health_bar_root.add_child(_health_bar_fill)
+	add_child(_health_bar_root)
+
+
+func _update_health_bar() -> void:
+	if _health_bar_fill == null or not is_instance_valid(_health_bar_fill):
+		return
+	var ratio: float = clampf(health / maxf(_max_health, 0.001), 0.0, 1.0)
+	_health_bar_fill.scale.x = maxf(0.001, ratio)
+	_health_bar_fill.position.x = -0.8 + (0.8 * ratio)
+
+
+func _update_health_bar_facing() -> void:
+	if _health_bar_root == null or not is_instance_valid(_health_bar_root):
+		return
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	_health_bar_root.look_at(cam.global_position, Vector3.UP)
+
+
+func _spawn_muzzle_flash(color: Color) -> void:
+	var flash := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.18
+	sphere.height = 0.36
+	flash.mesh = sphere
+	flash.position = Vector3(0, 0.85, 0)
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 1.8
+	flash.material_override = mat
+	add_child(flash)
+	var timer := get_tree().create_timer(0.1)
+	timer.timeout.connect(func() -> void:
+		if is_instance_valid(flash):
+			flash.queue_free()
+	)

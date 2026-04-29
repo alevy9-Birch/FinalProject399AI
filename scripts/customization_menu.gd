@@ -83,6 +83,7 @@ func _apply_selection_to_rover(rover: RigidBody3D) -> void:
 	if state == null:
 		return
 	_set_preview_variant(rover, 0)
+	_apply_preview_chassis_geometry(rover, state.selected_chassis_index)
 	_set_preview_color(rover, state.COLOR_VALUES[state.selected_color_index])
 
 
@@ -140,13 +141,14 @@ func _refresh_slot_buttons() -> void:
 		else:
 			_slot_buttons[i].disabled = false
 			for upgrade_name in state.UPGRADE_NAMES:
-				_slot_buttons[i].add_item("Slot %d: %s" % [i + 1, upgrade_name])
+				_slot_buttons[i].add_item(upgrade_name)
 			var selected_upgrade: String = state.selected_upgrades[i]
 			for idx in range(_slot_buttons[i].item_count):
 				var text: String = _slot_buttons[i].get_item_text(idx)
-				if text.ends_with(selected_upgrade):
+				if text == selected_upgrade:
 					_slot_buttons[i].selected = idx
 					break
+			_slot_buttons[i].tooltip_text = "Slot %d - click to choose component" % [i + 1]
 
 
 func _refresh_stats() -> void:
@@ -214,6 +216,53 @@ func _set_preview_variant(rover: Node3D, variant_index: int) -> void:
 		var child := root.get_child(i) as Node3D
 		if child != null:
 			child.visible = i == idx
+
+
+func _apply_preview_chassis_geometry(rover: Node3D, chassis_idx: int) -> void:
+	var body_scale: float = 1.0
+	var half_track: float = 0.95
+	var wheel_y: float = -0.82
+	var front_z: float = -1.2
+	var back_z: float = 1.2
+	var use_mid_axle: bool = false
+	match chassis_idx:
+		0:
+			body_scale = 0.9
+			half_track = 0.9
+			front_z = -1.05
+			back_z = 1.05
+		1:
+			body_scale = 1.0
+			half_track = 0.95
+			front_z = -1.2
+			back_z = 1.2
+		2:
+			body_scale = 1.22
+			half_track = 1.1
+			front_z = -1.45
+			back_z = 1.45
+			use_mid_axle = true
+	var variant_root: Node3D = rover.get_node_or_null("VariantRoot/VariantA") as Node3D
+	if variant_root != null:
+		variant_root.scale = Vector3.ONE * body_scale
+	var pivots: Dictionary = {
+		"WheelVisuals/FrontLeftWheelPivot": Vector3(-half_track, wheel_y, front_z),
+		"WheelVisuals/FrontRightWheelPivot": Vector3(half_track, wheel_y, front_z),
+		"WheelVisuals/BackLeftWheelPivot": Vector3(-half_track, wheel_y, back_z),
+		"WheelVisuals/BackRightWheelPivot": Vector3(half_track, wheel_y, back_z),
+		"WheelVisuals/MidLeftWheelPivot": Vector3(-half_track, wheel_y, 0.0),
+		"WheelVisuals/MidRightWheelPivot": Vector3(half_track, wheel_y, 0.0)
+	}
+	for path in pivots.keys():
+		var pivot: Node3D = rover.get_node_or_null(path) as Node3D
+		if pivot != null:
+			pivot.position = pivots[path]
+	var mid_left: Node3D = rover.get_node_or_null("WheelVisuals/MidLeftWheelPivot") as Node3D
+	var mid_right: Node3D = rover.get_node_or_null("WheelVisuals/MidRightWheelPivot") as Node3D
+	if mid_left != null:
+		mid_left.visible = use_mid_axle
+	if mid_right != null:
+		mid_right.visible = use_mid_axle
 
 
 func _set_preview_color(rover: Node, color: Color) -> void:

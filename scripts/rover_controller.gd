@@ -77,6 +77,7 @@ extends RigidBody3D
 @onready var _ore_direction_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/OreDirectionLabel") as Label
 @onready var _speed_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/SpeedLabel") as Label
 @onready var _weapon_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/WeaponLabel") as Label
+@onready var _weapon_stats_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/WeaponStatsLabel") as Label
 @onready var _power_bar: ProgressBar = get_node_or_null("/root/Main/HUD/PowerPanel/PowerBar") as ProgressBar
 @onready var _crosshair: Label = get_node_or_null("/root/Main/HUD/Crosshair") as Label
 
@@ -123,6 +124,7 @@ var _stuck_tilt_timer: float = 0.0
 var _thruster_particles: Array[GPUParticles3D] = []
 var _permanent_thrusters_active: bool = false
 var _permanent_thruster_force: float = 540.0
+var _run_ending: bool = false
 
 const VARIANT_STATS: Array[Dictionary] = [
 	{ # Default Rover
@@ -157,9 +159,12 @@ func _ready() -> void:
 	var state := get_node_or_null("/root/GameState")
 	if state != null:
 		_ore_collected = int(state.run_score)
+	call_deferred("_ensure_spawn_above_surface")
 
 
 func _physics_process(delta: float) -> void:
+	if _run_ending or not is_inside_tree():
+		return
 	if Input.is_action_just_pressed("reset_vehicle"):
 		_handle_run_end(false, "manual_reset")
 		return
@@ -430,17 +435,22 @@ func _return_to_main_menu() -> void:
 	var state := get_node_or_null("/root/GameState")
 	if state != null:
 		state.last_played_variant = state.selected_rover_variant
-	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
+	if is_inside_tree():
+		get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 
 func _handle_run_end(player_won: bool, reason: String) -> void:
+	if _run_ending:
+		return
+	_run_ending = true
 	var state := get_node_or_null("/root/GameState")
 	if state != null and state.has_method("finish_run"):
 		state.finish_run(player_won)
 	var logger := get_node_or_null("/root/TestLogger")
 	if logger != null:
 		logger.log_event("run_end", "won=%s reason=%s score=%d" % [str(player_won), reason, _ore_collected])
-	_return_to_main_menu()
+	set_physics_process(false)
+	call_deferred("_return_to_main_menu")
 
 
 func _check_win_altitude() -> void:
@@ -475,6 +485,46 @@ func _resolve_planet() -> void:
 		_planet = null
 	else:
 		_planet = found[0] as Node3D
+
+
+func _ensure_spawn_above_surface() -> void:
+	_resolve_planet()
+	if _planet == null or not _planet.has_method("get_surface_spawn_from_direction"):
+		return
+	var radial_dir: Vector3 = (global_position - _planet.global_position).normalized()
+	if radial_dir.length_squared() < 0.0001:
+		radial_dir = Vector3.UP
+	var clearance: float = _estimate_spawn_clearance()
+	var info: Dictionary = _planet.get_surface_spawn_from_direction(radial_dir, 340.0, clearance, [self])
+	if info.is_empty():
+		return
+	var safe_point: Vector3 = info.get("point", global_position)
+	var surface_up: Vector3 = info.get("normal", radial_dir)
+	global_position = safe_point
+	var forward: Vector3 = Vector3.FORWARD.slide(surface_up).normalized()
+	if forward.length_squared() < 0.001:
+		forward = surface_up.cross(Vector3.RIGHT).normalized()
+	global_basis = Basis.looking_at(forward, surface_up, true).orthonormalized()
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+
+
+func _estimate_spawn_clearance() -> float:
+	if _chassis_collision == null or _chassis_collision.shape == null:
+		return 42.0
+	var s: Shape3D = _chassis_collision.shape
+	if s is BoxShape3D:
+		var box: BoxShape3D = s as BoxShape3D
+		return maxf(24.0, maxf(box.size.x, maxf(box.size.y, box.size.z)) * 1.2)
+	if s is SphereShape3D:
+		return maxf(24.0, (s as SphereShape3D).radius * 2.0)
+	if s is CapsuleShape3D:
+		var cap: CapsuleShape3D = s as CapsuleShape3D
+		return maxf(24.0, cap.height + cap.radius)
+	if s is CylinderShape3D:
+		var cyl: CylinderShape3D = s as CylinderShape3D
+		return maxf(24.0, cyl.height + cyl.radius)
+	return 42.0
 
 
 func _apply_planet_gravity() -> void:
@@ -780,6 +830,8 @@ func _emit_radar_beep() -> void:
 func _find_nearest_ore() -> void:
 	_nearest_ore = null
 	_nearest_ore_dist = INF
+	if not is_inside_tree() or get_tree() == null:
+		return
 	var deposits: Array[Node] = get_tree().get_nodes_in_group("ore_deposit")
 	for node in deposits:
 		if not is_instance_valid(node):
@@ -837,6 +889,8 @@ func _update_gameplay_ui(forward_speed: float) -> void:
 		_ore_direction_label = get_node_or_null("/root/Main/HUD/StatusPanel/OreDirectionLabel") as Label
 	if _weapon_label == null:
 		_weapon_label = get_node_or_null("/root/Main/HUD/StatusPanel/WeaponLabel") as Label
+	if _weapon_stats_label == null:
+		_weapon_stats_label = get_node_or_null("/root/Main/HUD/StatusPanel/WeaponStatsLabel") as Label
 	if _power_bar == null:
 		_power_bar = get_node_or_null("/root/Main/HUD/PowerPanel/PowerBar") as ProgressBar
 	if _crosshair == null:
@@ -870,6 +924,8 @@ func _update_gameplay_ui(forward_speed: float) -> void:
 		_speed_label.text = "Speed: %.1f m/s" % absf(forward_speed)
 	if _weapon_label != null:
 		_weapon_label.text = "Weapon: %s" % _get_weapon_name()
+	if _weapon_stats_label != null:
+		_weapon_stats_label.text = _build_weapon_stats_text()
 	if _power_bar != null:
 		var power_ratio: float = 0.0 if _battery_max_power <= 0.01 else _battery_power / _battery_max_power
 		_power_bar.value = clampf(power_ratio, 0.0, 1.0)
@@ -883,6 +939,14 @@ func _get_weapon_name() -> String:
 	if _has_gatling:
 		return "Gatling Gun"
 	return "None"
+
+
+func _build_weapon_stats_text() -> String:
+	if _has_big_betsy:
+		return "Weapon Stats: Dmg 16 | Cooldown 0.65s | Knockback High"
+	if _has_gatling:
+		return "Weapon Stats: Dmg 6 | Fire Rate 11/s | Knockback Low"
+	return "Weapon Stats: --"
 
 
 func _update_weapon_system(delta: float) -> void:

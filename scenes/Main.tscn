@@ -142,7 +142,7 @@ value = 1.0
 offset_left = 18.0
 offset_top = 92.0
 offset_right = 360.0
-offset_bottom = 242.0
+offset_bottom = 266.0
 
 [node name="ScoreLabel" type="Label" parent="HUD/StatusPanel"]
 offset_left = 10.0
@@ -192,6 +192,13 @@ offset_top = 146.0
 offset_right = 330.0
 offset_bottom = 166.0
 text = "Weapon: None"
+
+[node name="WeaponStatsLabel" type="Label" parent="HUD/StatusPanel"]
+offset_left = 10.0
+offset_top = 166.0
+offset_right = 330.0
+offset_bottom = 186.0
+text = "Weapon Stats: --"
 
 [node name="Crosshair" type="Label" parent="HUD"]
 visible = false

@@ -5,6 +5,7 @@ This document lists every currently implemented planet biome and what makes each
 ## Biome List
 
 ### 1) Asteroid Rubble
+
 - **Theme:** fractured rock world with debris fields.
 - **Typical size:** leans `Tiny` to `Medium`.
 - **Typical gravity:** leans `Micro-G` / `Low-G`.
@@ -15,6 +16,7 @@ This document lists every currently implemented planet biome and what makes each
 - **Surface identity:** rocky gray-brown checkerboard palette.
 
 ### 2) Cratered Moon
+
 - **Theme:** dusty impact-scarred moon.
 - **Typical size:** mostly `Small` to `Large`.
 - **Typical gravity:** balanced around `Low-G` / `Earthlike`.
@@ -25,6 +27,7 @@ This document lists every currently implemented planet biome and what makes each
 - **Surface identity:** neutral lunar checkerboard palette.
 
 ### 3) Metallic Core
+
 - **Theme:** dense iron-rich world.
 - **Typical size:** mostly `Small` to `Large`.
 - **Typical gravity:** biased to `Earthlike` / `Heavy-G` / `Crushing`.
@@ -35,6 +38,7 @@ This document lists every currently implemented planet biome and what makes each
 - **Surface identity:** steel-toned checkerboard palette.
 
 ### 4) Volcanic Shard
+
 - **Theme:** unstable volcanic high-relief world.
 - **Typical size:** mostly `Small` to `Large`.
 - **Typical gravity:** usually `Low-G` to `Heavy-G`.
@@ -45,6 +49,7 @@ This document lists every currently implemented planet biome and what makes each
 - **Surface identity:** hot orange-red checkerboard palette.
 
 ### 5) Ice Dustball
+
 - **Theme:** frozen wind-worn ice sphere.
 - **Typical size:** mostly `Small` to `Large`.
 - **Typical gravity:** balanced around `Low-G` / `Earthlike`.
@@ -55,6 +60,7 @@ This document lists every currently implemented planet biome and what makes each
 - **Surface identity:** cold blue-white checkerboard palette.
 
 ### 6) Habitable World
+
 - **Theme:** greener, calmer surface with natural growth.
 - **Typical size:** biased larger (`Medium` / `Large` / `Huge`).
 - **Typical gravity:** around `Earthlike` with moderate variation.
@@ -65,6 +71,7 @@ This document lists every currently implemented planet biome and what makes each
 - **Surface identity:** green-brown checkerboard palette.
 
 ### 7) Desert Dune
+
 - **Theme:** arid sandy world with sparse structures.
 - **Typical size:** `Small` to `Large`.
 - **Typical gravity:** mostly `Low-G` / `Earthlike` / `Heavy-G`.
@@ -75,6 +82,7 @@ This document lists every currently implemented planet biome and what makes each
 - **Surface identity:** warm tan checkerboard palette.
 
 ### 8) Toxic Swamp
+
 - **Theme:** hazardous bioactive surface.
 - **Typical size:** biased to `Medium` / `Large`.
 - **Typical gravity:** tends heavier (`Earthlike` to `Crushing`).

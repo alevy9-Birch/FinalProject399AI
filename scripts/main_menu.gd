@@ -8,7 +8,6 @@ extends Control
 @onready var _ore_quantity_value: Label = $CenterContainer/Panel/VBox/MissionBriefingPanel/MissionBriefingVBox/MissionBriefingGrid/OreQuantityValue
 @onready var _planet_size_value: Label = $CenterContainer/Panel/VBox/MissionBriefingPanel/MissionBriefingVBox/MissionBriefingGrid/PlanetSizeValue
 @onready var _planet_gravity_value: Label = $CenterContainer/Panel/VBox/MissionBriefingPanel/MissionBriefingVBox/MissionBriefingGrid/PlanetGravityValue
-@onready var _surface_props_value: Label = $CenterContainer/Panel/VBox/MissionBriefingPanel/MissionBriefingVBox/MissionBriefingGrid/SurfacePropsValue
 @onready var _yelp_review_value: Label = $CenterContainer/Panel/VBox/MissionBriefingPanel/MissionBriefingVBox/MissionBriefingGrid/YelpReviewValue
 
 var _menu_sfx_player: AudioStreamPlayer
@@ -66,7 +65,6 @@ func _set_generated_mission_briefing_values() -> void:
 		_ore_quantity_value.text = "--"
 		_planet_size_value.text = "--"
 		_planet_gravity_value.text = "--"
-		_surface_props_value.text = "--"
 		_yelp_review_value.text = "--"
 		return
 
@@ -86,7 +84,6 @@ func _set_generated_mission_briefing_values() -> void:
 	var gravity_name: String = mission_generator.get_gravity_name(int(mission.get("gravity_class", 0)))
 	var gravity_mult: float = float(mission.get("gravity_multiplier", 1.0))
 	_planet_gravity_value.text = "%s (%.2fg)" % [gravity_name, gravity_mult]
-	_surface_props_value.text = mission_generator.get_prop_profile_name(int(mission.get("prop_profile", 0)))
 	var yelp_score: float = float(mission.get("yelp_score", 2.5))
 	var yelp_tagline: String = str(mission.get("yelp_tagline", "Rocky but scenic"))
 	_yelp_review_value.text = "%.1f stars - %s" % [yelp_score, yelp_tagline]

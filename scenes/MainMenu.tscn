@@ -123,10 +123,12 @@ text = "--"
 horizontal_alignment = 2
 
 [node name="SurfacePropsLabel" type="Label" parent="CenterContainer/Panel/VBox/MissionBriefingPanel/MissionBriefingVBox/MissionBriefingGrid"]
+visible = false
 layout_mode = 2
 text = "Surface Props"
 
 [node name="SurfacePropsValue" type="Label" parent="CenterContainer/Panel/VBox/MissionBriefingPanel/MissionBriefingVBox/MissionBriefingGrid"]
+visible = false
 layout_mode = 2
 text = "--"
 horizontal_alignment = 2
