@@ -166,9 +166,9 @@ Mission briefing should display:
 3. Generate mission on main menu open.
 4. Bind `MainMenu` labels to generated `MissionData`.
 5. On deployment, pass `MissionData` to gameplay scene systems:
-   - Planet terrain/radius/gravity
-   - Ore spawner
-   - Alien spawner
+  - Planet terrain/radius/gravity
+  - Ore spawner
+  - Alien spawner
 
 ## Initial Scope Guardrails
 
@@ -176,4 +176,3 @@ Mission briefing should display:
 - Keep ore interaction simple until detection/mining loop is stable.
 - Keep mission generation deterministic and debuggable (log seed + rolled enums).
 - Prioritize rover feel and readable UI over content volume.
-
