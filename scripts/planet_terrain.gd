@@ -492,10 +492,12 @@ func _position_rover_spawn(mission: Dictionary, macro: FastNoiseLite, ridge: Fas
 		return
 	var up := Vector3.UP
 	var surface: Vector3 = _sample_surface_point(up, macro, ridge, detail)
-	var spawn_altitude: float = 10.0 + clampf(planet_radius * 0.04, 10.0, 70.0)
+	# Keep initial drop short enough to avoid collision tunneling on concave terrain.
+	var spawn_altitude: float = 8.0 + clampf(planet_radius * 0.015, 6.0, 24.0)
 	rover.global_position = global_position + surface + up * spawn_altitude
 	if rover is RigidBody3D:
 		var rb: RigidBody3D = rover as RigidBody3D
+		rb.continuous_cd = true
 		rb.linear_velocity = Vector3.ZERO
 		rb.angular_velocity = Vector3.ZERO
 	var powerup: Area3D = get_node_or_null("../JetpackPowerup") as Area3D

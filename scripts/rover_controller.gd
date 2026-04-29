@@ -74,7 +74,6 @@ extends RigidBody3D
 @onready var _ore_distance_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/OreDistanceLabel") as Label
 @onready var _radar_state_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/RadarStateLabel") as Label
 @onready var _mining_prompt_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/MiningPromptLabel") as Label
-@onready var _ore_direction_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/OreDirectionLabel") as Label
 @onready var _speed_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/SpeedLabel") as Label
 @onready var _weapon_label: Label = get_node_or_null("/root/Main/HUD/StatusPanel/WeaponLabel") as Label
 @onready var _power_bar: ProgressBar = get_node_or_null("/root/Main/HUD/PowerPanel/PowerBar") as ProgressBar
@@ -117,13 +116,17 @@ var _fire_cooldown_timer: float = 0.0
 var _fire_hold_last_frame: bool = false
 var _shot_visuals_root: Node3D
 var _auto_drill_timer: float = 0.0
-var _ore_direction_hint_timer: float = 0.0
-var _ore_direction_hint_text: String = "Ore Direction: --"
+var _ore_ping_anchor: Node3D
+var _ore_ping_orb: MeshInstance3D
+var _ore_ping_timer: float = 0.0
+var _ore_ping_velocity: Vector3 = Vector3.ZERO
 var _stuck_tilt_timer: float = 0.0
 var _thruster_particles: Array[GPUParticles3D] = []
 var _permanent_thrusters_active: bool = false
 var _permanent_thruster_force: float = 540.0
 var _is_run_ending: bool = false
+const ORE_PING_DURATION: float = 0.15
+const ORE_PING_SPEED: float = 24.0
 
 const VARIANT_STATS: Array[Dictionary] = [
 	{ # Default Rover
@@ -134,6 +137,8 @@ const VARIANT_STATS: Array[Dictionary] = [
 
 
 func _ready() -> void:
+	# Prevent high-speed terrain tunneling on first impact (notably with heavy loadouts).
+	continuous_cd = true
 	_spawn_transform = global_transform
 	_wheel_pivots = [_front_left_pivot, _front_right_pivot, _back_left_pivot, _back_right_pivot, _mid_left_pivot, _mid_right_pivot]
 	_apply_selected_variant()
@@ -152,6 +157,7 @@ func _ready() -> void:
 	_setup_radar_materials()
 	_setup_radar_audio()
 	_setup_shot_visuals()
+	_setup_ore_ping_vfx()
 	_setup_thruster_particles()
 	_thruster_fuel = thruster_fuel_capacity
 	_battery_power = _battery_max_power
@@ -817,8 +823,7 @@ func _find_nearest_ore() -> void:
 func _handle_mining_input() -> void:
 	if not Input.is_action_just_pressed("mine_ore"):
 		return
-	if _nearest_ore != null and _nearest_ore_dist <= radar_range:
-		_set_ore_direction_hint()
+	_trigger_ore_ping()
 	if _nearest_ore == null or _nearest_ore_dist > mining_range:
 		return
 	if not _consume_power(_mining_power_cost):
@@ -830,6 +835,7 @@ func _handle_mining_input() -> void:
 		return
 	var collected_distance: float = _nearest_ore_dist
 	_ore_collected += gained
+	_clear_ore_ping_vfx()
 	var state := get_node_or_null("/root/GameState")
 	if state != null and state.has_method("add_score"):
 		state.add_score(gained)
@@ -852,8 +858,6 @@ func _update_gameplay_ui(forward_speed: float) -> void:
 		_mining_prompt_label = get_node_or_null("/root/Main/HUD/StatusPanel/MiningPromptLabel") as Label
 	if _speed_label == null:
 		_speed_label = get_node_or_null("/root/Main/HUD/StatusPanel/SpeedLabel") as Label
-	if _ore_direction_label == null:
-		_ore_direction_label = get_node_or_null("/root/Main/HUD/StatusPanel/OreDirectionLabel") as Label
 	if _weapon_label == null:
 		_weapon_label = get_node_or_null("/root/Main/HUD/StatusPanel/WeaponLabel") as Label
 	if _power_bar == null:
@@ -864,10 +868,7 @@ func _update_gameplay_ui(forward_speed: float) -> void:
 	if _score_label != null:
 		_score_label.text = "Score: %d ore" % _ore_collected
 	if _ore_distance_label != null:
-		if _nearest_ore == null:
-			_ore_distance_label.text = "Closest Ore: none detected"
-		else:
-			_ore_distance_label.text = "Closest Ore: %.1f m" % _nearest_ore_dist
+		_ore_distance_label.text = "Ore Ping: Press G"
 	if _radar_state_label != null:
 		var radar_on: bool = _nearest_ore != null and _nearest_ore_dist <= radar_range
 		if _nearest_ore != null and _nearest_ore_dist <= mining_range and _has_metal_detector:
@@ -877,14 +878,6 @@ func _update_gameplay_ui(forward_speed: float) -> void:
 	if _mining_prompt_label != null:
 		var can_mine: bool = _nearest_ore != null and _nearest_ore_dist <= mining_range
 		_mining_prompt_label.text = "Mining: Press G to collect" if can_mine else "Mining: Move closer and press G"
-	if _ore_direction_label != null:
-		var radar_contact: bool = _nearest_ore != null and _nearest_ore_dist <= radar_range
-		if radar_contact:
-			_ore_direction_label.text = _build_ore_direction_text()
-		elif _ore_direction_hint_timer > 0.0:
-			_ore_direction_label.text = _ore_direction_hint_text
-		else:
-			_ore_direction_label.text = "Ore Direction: --"
 	if _speed_label != null:
 		_speed_label.text = "Speed: %.1f m/s" % absf(forward_speed)
 	if _weapon_label != null:
@@ -960,6 +953,7 @@ func _update_auto_drill(delta: float) -> void:
 	if gained <= 0:
 		return
 	_ore_collected += gained
+	_clear_ore_ping_vfx()
 	var state := get_node_or_null("/root/GameState")
 	if state != null and state.has_method("add_score"):
 		state.add_score(gained)
@@ -971,32 +965,115 @@ func _update_auto_drill(delta: float) -> void:
 		logger.log_event("ore_auto_collected", "value=%d total=%d" % [gained, _ore_collected])
 
 
-func _set_ore_direction_hint() -> void:
-	if _nearest_ore == null:
-		return
-	_ore_direction_hint_text = _build_ore_direction_text()
-	_ore_direction_hint_timer = 1.75
-
-
-func _build_ore_direction_text() -> String:
-	if _nearest_ore == null:
-		return "Ore Direction: --"
-	var to_ore: Vector3 = _nearest_ore.global_position - global_position
-	var local: Vector3 = global_basis.inverse() * to_ore
-	var fb: String = "Front" if local.z < 0.0 else "Back"
-	var lr: String = "Left" if local.x < 0.0 else "Right"
-	var dominant: String
-	if absf(local.x) > absf(local.z) * 1.4:
-		dominant = lr
-	elif absf(local.z) > absf(local.x) * 1.4:
-		dominant = fb
-	else:
-		dominant = "%s-%s" % [fb, lr]
-	return "Ore Direction: %s (%.1fm)" % [dominant, _nearest_ore_dist]
-
-
 func _update_hint_timers(delta: float) -> void:
-	_ore_direction_hint_timer = maxf(0.0, _ore_direction_hint_timer - delta)
+	if _ore_ping_timer <= 0.0 or _ore_ping_orb == null:
+		return
+	_ore_ping_timer = maxf(0.0, _ore_ping_timer - delta)
+	if _ore_ping_timer <= 0.0:
+		_clear_ore_ping_vfx()
+		return
+	_ore_ping_orb.global_position += _ore_ping_velocity * delta
+
+
+func _setup_ore_ping_vfx() -> void:
+	_ore_ping_anchor = Node3D.new()
+	_ore_ping_anchor.name = "OrePingAnchor"
+	_ore_ping_anchor.position = Vector3(0.0, 3.2, 0.0)
+	add_child(_ore_ping_anchor)
+
+
+func _trigger_ore_ping() -> void:
+	if _nearest_ore == null or _ore_ping_anchor == null:
+		return
+	if _nearest_ore_dist > radar_range:
+		return
+	_clear_ore_ping_vfx()
+	var ping_color: Color = _get_ore_ping_color()
+	_ore_ping_orb = _build_ore_ping_orb(ping_color)
+	_ore_ping_anchor.add_child(_ore_ping_orb)
+	_ore_ping_orb.global_position = _get_ore_ping_spawn_position()
+	var to_ore: Vector3 = _nearest_ore.global_position - _ore_ping_orb.global_position
+	if to_ore.length_squared() < 0.0001:
+		return
+	_ore_ping_velocity = to_ore.normalized() * ORE_PING_SPEED
+	_ore_ping_timer = ORE_PING_DURATION
+
+
+func _build_ore_ping_orb(color: Color) -> MeshInstance3D:
+	var orb := MeshInstance3D.new()
+	var orb_mesh := SphereMesh.new()
+	orb_mesh.radius = 0.22
+	orb_mesh.height = 0.44
+	orb.mesh = orb_mesh
+	var orb_mat := StandardMaterial3D.new()
+	orb_mat.albedo_color = color
+	orb_mat.emission_enabled = true
+	orb_mat.emission = color
+	orb_mat.emission_energy_multiplier = 7.0
+	orb_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	orb.material_override = orb_mat
+	var glow_light := OmniLight3D.new()
+	glow_light.light_color = color
+	glow_light.light_energy = 1.6
+	glow_light.omni_range = 5.0
+	glow_light.shadow_enabled = false
+	orb.add_child(glow_light)
+	orb.add_child(_build_ore_ping_trail(color))
+	return orb
+
+
+func _build_ore_ping_trail(color: Color) -> GPUParticles3D:
+	var trail := GPUParticles3D.new()
+	trail.amount = 280
+	trail.lifetime = 0.42
+	trail.one_shot = false
+	trail.explosiveness = 0.0
+	trail.randomness = 0.34
+	trail.local_coords = false
+	var process := ParticleProcessMaterial.new()
+	process.gravity = Vector3.ZERO
+	process.initial_velocity_min = 0.1
+	process.initial_velocity_max = 0.7
+	process.scale_min = 0.288
+	process.scale_max = 0.384
+	process.color = Color(color.r, color.g, color.b, 0.95)
+	trail.process_material = process
+	var puff := SphereMesh.new()
+	puff.radius = 0.32
+	puff.height = 0.64
+	var puff_mat := StandardMaterial3D.new()
+	puff_mat.albedo_color = color
+	puff_mat.emission_enabled = true
+	puff_mat.emission = color
+	puff_mat.emission_energy_multiplier = 3.2
+	puff_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	puff.material = puff_mat
+	trail.draw_pass_1 = puff
+	trail.emitting = true
+	return trail
+
+
+func _get_ore_ping_color() -> Color:
+	var near_color := Color(0.2, 0.95, 0.3, 1.0) # Mining range: green.
+	var far_color := Color(0.96, 0.18, 0.16, 1.0) # Radar edge: red.
+	var t: float = 1.0
+	if radar_range > mining_range:
+		t = clampf((_nearest_ore_dist - mining_range) / (radar_range - mining_range), 0.0, 1.0)
+	return near_color.lerp(far_color, t)
+
+
+func _get_ore_ping_spawn_position() -> Vector3:
+	if _radar_buttons.size() > 1 and _radar_buttons[1] != null:
+		return _radar_buttons[1].global_position
+	return _ore_ping_anchor.global_position
+
+
+func _clear_ore_ping_vfx() -> void:
+	_ore_ping_timer = 0.0
+	_ore_ping_velocity = Vector3.ZERO
+	if _ore_ping_orb != null and is_instance_valid(_ore_ping_orb):
+		_ore_ping_orb.queue_free()
+	_ore_ping_orb = null
 
 
 func activate_permanent_thrusters() -> void:
