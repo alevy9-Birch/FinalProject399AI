@@ -17,7 +17,7 @@ func _build_starfield() -> void:
 	dot.height = 1.8
 	var stars := MultiMeshInstance3D.new()
 	stars.multimesh = mm
-	stars.mesh = dot
+	mm.mesh = dot
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color(0.86, 0.92, 1.0, 1.0)
 	mat.emission_enabled = true

@@ -123,6 +123,7 @@ var _stuck_tilt_timer: float = 0.0
 var _thruster_particles: Array[GPUParticles3D] = []
 var _permanent_thrusters_active: bool = false
 var _permanent_thruster_force: float = 540.0
+var _is_run_ending: bool = false
 
 const VARIANT_STATS: Array[Dictionary] = [
 	{ # Default Rover
@@ -160,6 +161,8 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _is_run_ending:
+		return
 	if Input.is_action_just_pressed("reset_vehicle"):
 		_handle_run_end(false, "manual_reset")
 		return
@@ -434,6 +437,9 @@ func _return_to_main_menu() -> void:
 
 
 func _handle_run_end(player_won: bool, reason: String) -> void:
+	if _is_run_ending:
+		return
+	_is_run_ending = true
 	var state := get_node_or_null("/root/GameState")
 	if state != null and state.has_method("finish_run"):
 		state.finish_run(player_won)
@@ -470,7 +476,11 @@ func _resolve_planet() -> void:
 		_planet = get_node_or_null(planet_path) as Node3D
 	if _planet != null:
 		return
-	var found: Array[Node] = get_tree().get_nodes_in_group("gravity_source")
+	var tree := get_tree()
+	if tree == null:
+		_planet = null
+		return
+	var found: Array[Node] = tree.get_nodes_in_group("gravity_source")
 	if found.is_empty():
 		_planet = null
 	else:
@@ -740,6 +750,12 @@ func _setup_radar_audio() -> void:
 
 
 func _update_ore_radar(delta: float) -> void:
+	if _is_run_ending or not is_inside_tree():
+		_nearest_ore = null
+		_nearest_ore_dist = INF
+		_radar_flash_timer = 0.0
+		_set_radar_flash(false)
+		return
 	_find_nearest_ore()
 	var ore_in_range: bool = _nearest_ore != null and _nearest_ore_dist <= radar_range
 	if not ore_in_range:
@@ -780,7 +796,10 @@ func _emit_radar_beep() -> void:
 func _find_nearest_ore() -> void:
 	_nearest_ore = null
 	_nearest_ore_dist = INF
-	var deposits: Array[Node] = get_tree().get_nodes_in_group("ore_deposit")
+	var tree := get_tree()
+	if tree == null:
+		return
+	var deposits: Array[Node] = tree.get_nodes_in_group("ore_deposit")
 	for node in deposits:
 		if not is_instance_valid(node):
 			continue
