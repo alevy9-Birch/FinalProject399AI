@@ -60,7 +60,7 @@ const CHASSIS_DATA: Array[Dictionary] = [
 			"drive_power_drain": 3.0,
 			"thruster_power_drain_mult": 1.25,
 			"mining_power_cost": 6.0,
-			"weapon_power_cost": 4.0
+			"weapon_power_cost": 0.0
 		}
 	},
 	{
@@ -82,7 +82,7 @@ const CHASSIS_DATA: Array[Dictionary] = [
 			"drive_power_drain": 3.4,
 			"thruster_power_drain_mult": 1.35,
 			"mining_power_cost": 6.0,
-			"weapon_power_cost": 4.8
+			"weapon_power_cost": 0.0
 		}
 	},
 	{
@@ -104,7 +104,7 @@ const CHASSIS_DATA: Array[Dictionary] = [
 			"drive_power_drain": 3.9,
 			"thruster_power_drain_mult": 1.45,
 			"mining_power_cost": 7.0,
-			"weapon_power_cost": 5.5
+			"weapon_power_cost": 0.0
 		}
 	}
 ]
@@ -116,51 +116,45 @@ const UPGRADE_NAMES: PackedStringArray = [
 	"Solar Panel",
 	"Radar",
 	"Auto Drill",
-	"Metal Detector",
 	"Gatling Gun",
 	"Big Betsy",
 	"Thrusters",
 	"Gyroscopic Sensor",
 	"Rubber Tires",
 	"Supercharged Engine",
-	"Steering Wheel",
-	"Dual Factor Authentication"
+	"Steering Wheel"
 ]
 
 const UPGRADE_MODIFIERS: Dictionary = {
 	"None": {},
 	"Lead Brick": {"mass": 2.8, "air_torque": -8.0},
-	"Battery": {"thruster_fuel_capacity": 35.0, "thruster_burn_rate": -4.0, "battery_max_power": 40.0},
-	"Solar Panel": {"thruster_refill_rate": 8.0, "power_regen_rate": 2.2},
+	"Battery": {"thruster_fuel_capacity": 35.0, "battery_max_power": 40.0},
+	"Solar Panel": {"thruster_recharge_rate_mult": 0.4, "power_regen_rate": 1.6},
 	"Radar": {"radar_range": 20.0},
 	"Auto Drill": {"mining_range": 2.5},
-	"Metal Detector": {"radar_flash_hz": 2.5},
-	"Gatling Gun": {"mass": 1.2, "weapon_power_cost": 1.6},
-	"Big Betsy": {"mass": 2.0, "weapon_power_cost": 3.2},
+	"Gatling Gun": {"mass": 1.2, "weapon_power_cost": 1.0},
+	"Big Betsy": {"mass": 2.0, "weapon_power_cost": 4.0},
 	"Thrusters": {"thruster_initial_impulse_force": 120.0, "thruster_sustain_force": 70.0, "thruster_burn_rate": 10.0},
 	"Gyroscopic Sensor": {"air_torque": 18.0},
-	"Rubber Tires": {"drive_force": 90.0},
-	"Supercharged Engine": {"mass": 1.4, "drive_force": 130.0, "max_drive_speed": 4.0, "thruster_burn_rate": 5.0},
-	"Steering Wheel": {"turn_torque": 24.0},
-	"Dual Factor Authentication": {}
+	"Rubber Tires": {"drive_force": 140.0},
+	"Supercharged Engine": {"mass": 1.4, "drive_force": 200.0, "max_drive_speed": 6.0, "thruster_burn_rate": 5.0},
+	"Steering Wheel": {"turn_torque": 24.0}
 }
 
 const UPGRADE_DESCRIPTIONS: Dictionary = {
 	"None": "No component equipped in this slot.",
 	"Lead Brick": "Adds heavy ballast. Improves stability but reduces air control.",
-	"Battery": "Adds extra battery storage and slightly improves fuel economy.",
-	"Solar Panel": "Regenerates power faster and improves refuel pacing.",
+	"Battery": "Adds extra battery storage and thruster fuel capacity.",
+	"Solar Panel": "Regenerates power faster and increases grounded thruster recharge speed.",
 	"Radar": "Increases ore detection range.",
 	"Auto Drill": "Automatically mines ore while in mining range.",
-	"Metal Detector": "Boosts radar pulse frequency and highlights mining window.",
 	"Gatling Gun": "Rapid-fire weapon with low per-shot power cost.",
 	"Big Betsy": "Heavy cannon with slower cadence and high impact.",
 	"Thrusters": "Improves thrust force but increases consumption pressure.",
 	"Gyroscopic Sensor": "Stronger in-air correction and tilt control.",
 	"Rubber Tires": "Improves traction and drive response.",
 	"Supercharged Engine": "Higher speed and drive force at higher energy usage.",
-	"Steering Wheel": "Sharper turning response.",
-	"Dual Factor Authentication": "Safety module for later self-destruct systems."
+	"Steering Wheel": "Sharper turning response."
 }
 
 
@@ -177,7 +171,7 @@ func get_unlocked_slot_count() -> int:
 func set_upgrade_in_slot(slot_idx: int, upgrade_name: String) -> void:
 	if slot_idx < 0 or slot_idx >= selected_upgrades.size():
 		return
-	selected_upgrades[slot_idx] = upgrade_name
+	selected_upgrades[slot_idx] = upgrade_name if UPGRADE_NAMES.has(upgrade_name) else "None"
 
 
 func get_final_rover_stats() -> Dictionary:

@@ -28,12 +28,12 @@ extends RigidBody3D
 @export var thruster_fuel_capacity: float = 100.0
 @export var thruster_initial_burst_cost: float = 30.0
 @export var thruster_burn_rate: float = 48.0
-@export var thruster_refill_rate: float = 34.0
+@export var thruster_recharge_rate_mult: float = 1.0
 @export var planet_path: NodePath = NodePath("../Planet")
 @export var gravity_strength: float = 26.0
 @export var anti_roll_force: float = 22.0
-@export var radar_range: float = 55.0
-@export var mining_range: float = 8.0
+@export var radar_range: float = 50.0
+@export var mining_range: float = 7.5
 @export var radar_flash_hz: float = 7.5
 @export var radar_beep_volume_db: float = -16.0
 @export var win_altitude_above_surface: float = 180.0
@@ -111,7 +111,8 @@ var _weapon_power_cost: float = 4.0
 var _has_gatling: bool = false
 var _has_big_betsy: bool = false
 var _has_auto_drill: bool = false
-var _has_metal_detector: bool = false
+var _gatling_count: int = 0
+var _big_betsy_count: int = 0
 var _fire_cooldown_timer: float = 0.0
 var _fire_hold_last_frame: bool = false
 var _shot_visuals_root: Node3D
@@ -261,7 +262,7 @@ func _apply_custom_loadout_stats() -> void:
 	thruster_initial_impulse_force = float(stats.get("thruster_initial_impulse_force", thruster_initial_impulse_force))
 	thruster_sustain_force = float(stats.get("thruster_sustain_force", thruster_sustain_force))
 	thruster_initial_burst_cost = float(stats.get("thruster_initial_burst_cost", thruster_initial_burst_cost))
-	thruster_refill_rate = float(stats.get("thruster_refill_rate", thruster_refill_rate))
+	thruster_recharge_rate_mult = float(stats.get("thruster_recharge_rate_mult", thruster_recharge_rate_mult))
 	thruster_burn_rate = float(stats.get("thruster_burn_rate", thruster_burn_rate))
 	var radar_range_bonus: float = float(stats.get("radar_range", 0.0))
 	radar_range = (radar_range + radar_range_bonus) * RADAR_RANGE_MULTIPLIER
@@ -338,12 +339,31 @@ func _refresh_upgrade_capabilities() -> void:
 		_has_gatling = false
 		_has_big_betsy = false
 		_has_auto_drill = false
-		_has_metal_detector = false
+		_gatling_count = 0
+		_big_betsy_count = 0
+		_weapon_power_cost = 0.0
 		return
-	_has_gatling = state.has_method("has_upgrade") and state.has_upgrade("Gatling Gun")
-	_has_big_betsy = state.has_method("has_upgrade") and state.has_upgrade("Big Betsy")
 	_has_auto_drill = state.has_method("has_upgrade") and state.has_upgrade("Auto Drill")
-	_has_metal_detector = state.has_method("has_upgrade") and state.has_upgrade("Metal Detector")
+	_gatling_count = 0
+	_big_betsy_count = 0
+	var unlocked_slots: int = 0
+	if state.has_method("get_unlocked_slot_count"):
+		unlocked_slots = int(state.get_unlocked_slot_count())
+	for i in range(min(unlocked_slots, state.selected_upgrades.size())):
+		var upg: String = state.selected_upgrades[i]
+		if upg == "Gatling Gun":
+			_gatling_count += 1
+		elif upg == "Big Betsy":
+			_big_betsy_count += 1
+	_has_gatling = _gatling_count > 0
+	_has_big_betsy = _big_betsy_count > 0
+	# Duplicate weapon components scale fire rate only, not shot cost.
+	if _has_gatling:
+		_weapon_power_cost = 1.0
+	elif _has_big_betsy:
+		_weapon_power_cost = 4.0
+	else:
+		_weapon_power_cost = 0.0
 
 
 func _setup_shot_visuals() -> void:
@@ -725,7 +745,7 @@ func _update_thruster_refill(delta: float, boost_pressed: bool) -> void:
 		return
 	if _thruster_idle_timer < 1.0:
 		return
-	var recharge_per_second: float = thruster_fuel_capacity * 0.25
+	var recharge_per_second: float = thruster_fuel_capacity * 0.25 * maxf(0.0, thruster_recharge_rate_mult)
 	_thruster_fuel = minf(thruster_fuel_capacity, _thruster_fuel + recharge_per_second * delta)
 
 
@@ -874,10 +894,7 @@ func _update_gameplay_ui(forward_speed: float) -> void:
 		_ore_distance_label.text = "Ore Ping: Press G"
 	if _radar_state_label != null:
 		var radar_on: bool = _nearest_ore != null and _nearest_ore_dist <= radar_range
-		if _nearest_ore != null and _nearest_ore_dist <= mining_range and _has_metal_detector:
-			_radar_state_label.text = "Radar: MINING WINDOW LOCKED"
-		else:
-			_radar_state_label.text = "Radar: ORE IN RANGE" if radar_on else "Radar: scanning..."
+		_radar_state_label.text = "Radar: ORE IN RANGE" if radar_on else "Radar: scanning..."
 	if _mining_prompt_label != null:
 		var can_mine: bool = _nearest_ore != null and _nearest_ore_dist <= mining_range
 		_mining_prompt_label.text = "Mining: Press G to collect" if can_mine else "Mining: Move closer and press G"
@@ -908,15 +925,18 @@ func _update_weapon_system(delta: float) -> void:
 	var fire_held: bool = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
 	if _has_gatling:
 		if fire_held:
-			_try_fire_weapon(0.09, 95.0, Color(0.95, 0.8, 0.25, 1.0), _weapon_power_cost)
+			var gatling_rate: float = 8.0 * float(maxi(_gatling_count, 1))
+			var gatling_cooldown: float = 1.0 / maxf(gatling_rate, 0.01)
+			_try_fire_weapon(gatling_cooldown, 95.0, 4.0, Color(0.95, 0.8, 0.25, 1.0), _weapon_power_cost)
 	else:
 		var fire_just_pressed: bool = fire_held and not _fire_hold_last_frame
 		if fire_just_pressed:
-			_try_fire_weapon(0.65, 125.0, Color(1.0, 0.45, 0.2, 1.0), _weapon_power_cost * 1.8)
+			var betsy_cooldown: float = 0.65 / float(maxi(_big_betsy_count, 1))
+			_try_fire_weapon(betsy_cooldown, 125.0, 30.0, Color(1.0, 0.45, 0.2, 1.0), _weapon_power_cost)
 	_fire_hold_last_frame = fire_held
 
 
-func _try_fire_weapon(cooldown: float, max_distance: float, color: Color, power_cost: float) -> void:
+func _try_fire_weapon(cooldown: float, max_distance: float, damage: float, color: Color, power_cost: float) -> void:
 	if _fire_cooldown_timer > 0.0:
 		return
 	if not _consume_power(power_cost):
@@ -934,7 +954,6 @@ func _try_fire_weapon(cooldown: float, max_distance: float, color: Color, power_
 		end = hit["position"]
 		var collider: Object = hit["collider"]
 		if collider != null and collider.has_method("apply_damage"):
-			var damage: float = 16.0 if _has_big_betsy else 6.0
 			collider.apply_damage(damage)
 	_spawn_shot_visual(start, end, color)
 
