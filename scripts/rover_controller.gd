@@ -82,8 +82,8 @@ extends RigidBody3D
 var _grounded: bool = false
 var _was_grounded_last_frame: bool = false
 var _thruster_fuel: float = 100.0
-var _thruster_locked_until_full: bool = false
 var _thruster_was_pressed: bool = false
+var _thruster_idle_timer: float = 999.0
 var _spawn_transform: Transform3D
 var _wheel_pivots: Array[Node3D] = []
 var _base_pivot_positions: Array[Vector3] = []
@@ -127,6 +127,7 @@ var _permanent_thruster_force: float = 540.0
 var _is_run_ending: bool = false
 const ORE_PING_DURATION: float = 0.15
 const ORE_PING_SPEED: float = 24.0
+const RADAR_RANGE_MULTIPLIER: float = 2.0
 
 const VARIANT_STATS: Array[Dictionary] = [
 	{ # Default Rover
@@ -199,7 +200,7 @@ func _physics_process(delta: float) -> void:
 	_update_wheel_visuals(effective_turn_input, delta)
 	_update_thruster_ui()
 	_check_button_orientation_reset()
-	_update_thruster_refill(delta)
+	_update_thruster_refill(delta, boost_pressed)
 	_update_ore_radar(delta)
 	_handle_mining_input()
 	_update_auto_drill(delta)
@@ -262,7 +263,8 @@ func _apply_custom_loadout_stats() -> void:
 	thruster_initial_burst_cost = float(stats.get("thruster_initial_burst_cost", thruster_initial_burst_cost))
 	thruster_refill_rate = float(stats.get("thruster_refill_rate", thruster_refill_rate))
 	thruster_burn_rate = float(stats.get("thruster_burn_rate", thruster_burn_rate))
-	radar_range = float(stats.get("radar_range", radar_range))
+	var radar_range_bonus: float = float(stats.get("radar_range", 0.0))
+	radar_range = (radar_range + radar_range_bonus) * RADAR_RANGE_MULTIPLIER
 	mining_range = float(stats.get("mining_range", mining_range))
 	radar_flash_hz = float(stats.get("radar_flash_hz", radar_flash_hz))
 	_battery_max_power = float(stats.get("battery_max_power", _battery_max_power))
@@ -396,7 +398,7 @@ func _update_power_budget(delta: float, forward_input: float, boost_pressed: boo
 	_battery_power = minf(_battery_max_power, _battery_power + _power_regen_rate * delta)
 	if absf(forward_input) > 0.05 and _contact_count() > 0:
 		_consume_power(_drive_power_drain * absf(forward_input) * delta)
-	if boost_pressed and not _thruster_locked_until_full and _thruster_fuel > 0.0:
+	if boost_pressed and _thruster_fuel > 0.0:
 		_consume_power(_thruster_power_drain_mult * thruster_burn_rate * delta * 0.18)
 
 
@@ -646,11 +648,7 @@ func _apply_thruster(delta: float, boost_pressed: bool) -> void:
 		_thruster_was_pressed = false
 		_set_thruster_particles(false, 0.0)
 		return
-	if _thruster_locked_until_full:
-		# Fuel is recharging after landing; only weak afterburner allowed.
-		apply_central_force(global_basis.y * thruster_afterburner_force)
-		_set_thruster_particles(true, 0.35)
-		return
+	_thruster_idle_timer = 0.0
 
 	# Initial tap burst costs fuel once per press.
 	if not _thruster_was_pressed:
@@ -715,15 +713,20 @@ func _update_wheel_visuals(effective_turn_input: float, delta: float) -> void:
 		pivot.position.y = base_pos.y + _suspension_smoothed[i]
 
 
-func _update_thruster_refill(delta: float) -> void:
-	if _grounded and not _was_grounded_last_frame:
-		_thruster_locked_until_full = true
-
-	if _thruster_locked_until_full:
-		_thruster_fuel = minf(thruster_fuel_capacity, _thruster_fuel + thruster_refill_rate * delta)
-		if _thruster_fuel >= thruster_fuel_capacity - 0.001:
-			_thruster_fuel = thruster_fuel_capacity
-			_thruster_locked_until_full = false
+func _update_thruster_refill(delta: float, boost_pressed: bool) -> void:
+	if _permanent_thrusters_active:
+		_thruster_fuel = thruster_fuel_capacity
+		return
+	if boost_pressed:
+		_thruster_idle_timer = 0.0
+	else:
+		_thruster_idle_timer += delta
+	if not _grounded:
+		return
+	if _thruster_idle_timer < 1.0:
+		return
+	var recharge_per_second: float = thruster_fuel_capacity * 0.25
+	_thruster_fuel = minf(thruster_fuel_capacity, _thruster_fuel + recharge_per_second * delta)
 
 
 func _setup_radar_materials() -> void:
@@ -1188,8 +1191,8 @@ func _reset_vehicle_state() -> void:
 	_grounded = false
 	_was_grounded_last_frame = false
 	_thruster_fuel = thruster_fuel_capacity
-	_thruster_locked_until_full = false
 	_thruster_was_pressed = false
+	_thruster_idle_timer = 999.0
 	_battery_power = _battery_max_power
 
 

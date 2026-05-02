@@ -134,7 +134,7 @@ func generate_new_mission(seed: int = -1) -> Dictionary:
 	var gravity_multiplier: float = _gravity_multiplier_for_class(gravity_class)
 	var radius: float = _radius_for_size_class(size_class, rng)
 	var terrain_profile: Dictionary = _terrain_profile_for_type(rng, planet_type)
-	var ore_node_count: int = _ore_count_for_quantity(ore_quantity, size_class, rng)
+	var ore_node_count: int = int(round(float(_ore_count_for_quantity(ore_quantity, size_class, rng)) * 2.0))
 	var alien_budget: int = _alien_budget_for_presence(alien_presence, size_class, rng)
 	var alien_interval: float = _alien_interval_for_presence(alien_presence, rng)
 	var prop_density: float = _prop_density_for_profile(prop_profile, size_class, rng)
@@ -359,19 +359,23 @@ func _terrain_profile_for_type(rng: RandomNumberGenerator, planet_type: int) -> 
 
 
 func _ore_count_for_quantity(ore_quantity: int, size_class: int, rng: RandomNumberGenerator) -> int:
-	var base: int = 52 + size_class * 20
+	var base: int = 72
 	match ore_quantity:
 		OreQuantity.SCARCE:
-			base -= 16
+			base -= 24
 		OreQuantity.PATCHY:
-			base -= 6
+			base -= 10
 		OreQuantity.STANDARD:
 			base += 0
 		OreQuantity.RICH:
-			base += 20
+			base += 24
 		OreQuantity.BONANZA:
-			base += 36
-	return maxi(24, base + rng.randi_range(-10, 12))
+			base += 42
+	# Explicit size scaling: tiny planets are 0.5x base ore, huge planets are 2.0x base ore.
+	var size_t: float = clampf(float(size_class) / float(maxi(PlanetSizeClass.HUGE, 1)), 0.0, 1.0)
+	var size_multiplier: float = lerpf(0.5, 2.0, size_t)
+	var scaled_base: float = float(base) * size_multiplier
+	return maxi(24, int(round(scaled_base)) + rng.randi_range(-10, 12))
 
 
 func _alien_budget_for_presence(alien_presence: int, size_class: int, rng: RandomNumberGenerator) -> int:
