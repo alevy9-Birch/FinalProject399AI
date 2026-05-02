@@ -53,6 +53,8 @@ extends Control
 
 var _preview_rover: RigidBody3D
 var _selected_slot_idx: int = 0
+## Suppress OptionButton callbacks while syncing UI programmatically (avoids wrong SFX/state).
+var _suppress_option_callbacks: bool = false
 var _ui_sfx_player: AudioStreamPlayer
 var _chassis_click_stream: AudioStreamWAV
 var _slot_click_stream: AudioStreamWAV
@@ -88,6 +90,7 @@ func _setup_ui_from_state() -> void:
 	var state := get_node_or_null("/root/GameState")
 	if state == null:
 		return
+	_suppress_option_callbacks = true
 	_color_option.clear()
 	for color_name in state.COLOR_NAMES:
 		_color_option.add_item(color_name)
@@ -95,6 +98,7 @@ func _setup_ui_from_state() -> void:
 	_slot_upgrade_option.clear()
 	for upgrade_name in state.UPGRADE_NAMES:
 		_slot_upgrade_option.add_item(upgrade_name)
+	_suppress_option_callbacks = false
 	_refresh_all_ui()
 
 
@@ -123,9 +127,12 @@ func _apply_selection_to_rover(rover: RigidBody3D) -> void:
 
 
 func _on_color_option_item_selected(index: int) -> void:
+	if _suppress_option_callbacks:
+		return
 	var state := get_node_or_null("/root/GameState")
 	if state == null:
 		return
+	_play_ui_sfx(_chassis_click_stream)
 	state.selected_color_index = index
 	_apply_selection_to_rover(_preview_rover)
 
@@ -154,18 +161,23 @@ func _on_slot_button_pressed(slot_idx: int) -> void:
 	_selected_slot_idx = slot_idx
 	_selected_slot_label.text = "Slot %d" % (_selected_slot_idx + 1)
 	var current: String = state.selected_upgrades[_selected_slot_idx]
+	_suppress_option_callbacks = true
 	for i in range(_slot_upgrade_option.item_count):
 		if _slot_upgrade_option.get_item_text(i) == current:
 			_slot_upgrade_option.selected = i
 			break
+	_suppress_option_callbacks = false
 
 
 func _on_slot_upgrade_option_selected(index: int) -> void:
+	if _suppress_option_callbacks:
+		return
 	var state := get_node_or_null("/root/GameState")
 	if state == null:
 		return
 	if _selected_slot_idx >= state.get_unlocked_slot_count():
 		return
+	_play_ui_sfx(_chassis_click_stream)
 	var selected_upgrade: String = _slot_upgrade_option.get_item_text(index)
 	state.set_upgrade_in_slot(_selected_slot_idx, selected_upgrade)
 	_refresh_all_ui()

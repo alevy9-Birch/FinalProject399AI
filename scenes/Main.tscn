@@ -83,10 +83,14 @@ current = false
 script = ExtResource("2_qruo7")
 
 [node name="Panel" type="Panel" parent="DebugOverlay"]
-offset_left = 16.0
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = -500.0
 offset_top = 16.0
-offset_right = 500.0
-offset_bottom = 170.0
+offset_right = -16.0
+offset_bottom = 184.0
 
 [node name="Message" type="Label" parent="DebugOverlay/Panel"]
 offset_left = 10.0

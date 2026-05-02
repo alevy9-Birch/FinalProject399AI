@@ -14,6 +14,8 @@ extends RigidBody3D
 @export var steer_max_degrees: float = 30.0
 @export var steer_visual_speed: float = 10.0
 @export var wheel_radius: float = 0.42
+## Lifts wheel visuals along the ground normal so mesh bottoms don't sink into terrain.
+@export var wheel_visual_ground_clearance: float = 0.07
 @export var suspension_travel: float = 0.42
 @export var suspension_rest_distance: float = 1.0
 @export var ground_grip: float = 12.0
@@ -36,6 +38,8 @@ extends RigidBody3D
 @export var mining_range: float = 7.5
 @export var radar_flash_hz: float = 7.5
 @export var radar_beep_volume_db: float = -16.0
+@export var drive_rumble_volume_db: float = -30.0
+@export var ore_collect_volume_db: float = -8.0
 @export var win_altitude_above_surface: float = 180.0
 
 @onready var _ground_rays: Array[RayCast3D] = [
@@ -98,6 +102,13 @@ var _radar_flash_timer: float = 0.0
 var _radar_flash_on: bool = false
 var _radar_audio_player: AudioStreamPlayer3D
 var _radar_audio_playback: AudioStreamGeneratorPlayback
+var _drive_rumble_player: AudioStreamPlayer
+var _drive_rumble_playback: AudioStreamGeneratorPlayback
+var _drive_rumble_phase: float = 0.0
+var _drive_rumble_scrape_phase: float = 0.0
+var _drive_rumble_noise_u: int = 0xC0FFEE01
+var _ore_collect_player: AudioStreamPlayer
+var _ore_collect_stream: AudioStreamWAV
 var _nearest_ore: Node3D
 var _nearest_ore_dist: float = INF
 var _ore_collected: int = 0
@@ -158,6 +169,8 @@ func _ready() -> void:
 	_apply_mission_gravity()
 	_setup_radar_materials()
 	_setup_radar_audio()
+	_setup_drive_rumble_audio()
+	_setup_ore_collect_audio()
 	_setup_shot_visuals()
 	_setup_ore_ping_vfx()
 	_setup_thruster_particles()
@@ -207,6 +220,7 @@ func _physics_process(delta: float) -> void:
 	_update_auto_drill(delta)
 	_update_weapon_system(delta)
 	_update_gameplay_ui(forward_speed)
+	_update_drive_rumble_audio(forward_input, forward_speed)
 	_update_hint_timers(delta)
 	_was_grounded_last_frame = _grounded
 	_log_telemetry(delta, forward_speed)
@@ -724,7 +738,7 @@ func _update_wheel_visuals(effective_turn_input: float, delta: float) -> void:
 		if ray.is_colliding():
 			var hit: Vector3 = ray.get_collision_point()
 			var normal: Vector3 = ray.get_collision_normal()
-			var target_hub: Vector3 = hit + normal * wheel_radius
+			var target_hub: Vector3 = hit + normal * (wheel_radius + wheel_visual_ground_clearance)
 			var pivot_local: Vector3 = to_local(target_hub)
 			raw_offset = clampf(pivot_local.y - base_pos.y, -suspension_travel, suspension_travel)
 		else:
@@ -822,6 +836,121 @@ func _emit_radar_beep() -> void:
 		_radar_audio_playback.push_frame(Vector2(v, v))
 
 
+func _setup_drive_rumble_audio() -> void:
+	_drive_rumble_player = AudioStreamPlayer.new()
+	_drive_rumble_player.name = "DriveRumblePlayer"
+	_drive_rumble_player.bus = "Master"
+	_drive_rumble_player.volume_db = drive_rumble_volume_db
+	add_child(_drive_rumble_player)
+	var generator := AudioStreamGenerator.new()
+	generator.mix_rate = 24000.0
+	generator.buffer_length = 0.22
+	_drive_rumble_player.stream = generator
+	_drive_rumble_player.play()
+	_drive_rumble_playback = _drive_rumble_player.get_stream_playback() as AudioStreamGeneratorPlayback
+
+
+func _setup_ore_collect_audio() -> void:
+	_ore_collect_player = AudioStreamPlayer.new()
+	_ore_collect_player.name = "OreCollectSfx"
+	_ore_collect_player.bus = "Master"
+	_ore_collect_player.volume_db = ore_collect_volume_db
+	add_child(_ore_collect_player)
+	_ore_collect_stream = _build_ore_collect_stream()
+
+
+func _update_drive_rumble_audio(forward_input: float, forward_speed: float) -> void:
+	if _drive_rumble_playback == null:
+		return
+	var contacts: int = _contact_count()
+	var speed_ratio: float = clampf(absf(forward_speed) / maxf(max_drive_speed * 1.05, 0.01), 0.0, 1.0)
+	var input_ratio: float = clampf(absf(forward_input), 0.0, 1.0)
+	## Full rumble as soon as the player asks for throttle (no wait for speed to build).
+	var move_immediate: float = smoothstep(0.012, 0.065, input_ratio)
+	var intensity: float = 0.0
+	if _grounded and contacts > 0:
+		var wheel_factor: float = clampf(float(contacts) / float(maxi(_wheel_pivots.size(), 1)), 0.34, 1.0)
+		intensity = lerpf(speed_ratio * 0.72, 1.0, input_ratio * 0.68)
+		intensity = maxf(intensity, move_immediate * 0.82)
+		intensity = maxf(intensity, speed_ratio * 0.4)
+		intensity *= wheel_factor
+	_fill_drive_rumble_buffer(intensity)
+
+
+func _fill_drive_rumble_buffer(intensity: float) -> void:
+	if _drive_rumble_playback == null:
+		return
+	var sample_rate: float = 24000.0
+	var avail: int = _drive_rumble_playback.get_frames_available()
+	if avail <= 0:
+		return
+	var cap: int = mini(avail, 2600)
+	for _i in range(cap):
+		_drive_rumble_noise_u = (_drive_rumble_noise_u * 1664525 + 1013904223) & 0x7FFFFFFF
+		var white: float = float(_drive_rumble_noise_u & 0x7FFF) / float(0x7FFF) * 2.0 - 1.0
+		## ~12% lower base freqs = slightly deeper pitch (same rocky character).
+		_drive_rumble_phase += TAU * (24.5 + intensity * 37.0) / sample_rate
+		## Higher, uneven partials + noise wobble = loose rock / rubble scrape.
+		_drive_rumble_scrape_phase += TAU * (103.0 + intensity * 95.0 + white * 12.0) / sample_rate
+		var rock_grind: float = sin(_drive_rumble_scrape_phase) * 0.11
+		rock_grind += sin(_drive_rumble_scrape_phase * 2.47 + 0.41) * 0.085
+		rock_grind += sin(_drive_rumble_scrape_phase * 3.71 + 1.15) * 0.052
+		rock_grind += sin(_drive_rumble_scrape_phase * 5.19 + 2.05) * 0.028
+		var bump: float = sin(_drive_rumble_phase * 0.46) * 0.17
+		bump += sin(_drive_rumble_phase * 1.67 + white * 0.95) * 0.075 * intensity
+		var chatter: float = white * 0.36 * intensity
+		var skitter: float = (float((_drive_rumble_noise_u >> 5) & 0xFF) / 255.0 - 0.5) * 0.2 * intensity
+		var rough: float = (rock_grind + bump) * intensity + chatter + skitter
+		var v: float = tanh(rough * 1.08) * lerpf(0.14, 0.44, intensity)
+		if intensity < 0.01:
+			v = 0.0
+		_drive_rumble_playback.push_frame(Vector2(v, v))
+
+
+func _play_ore_collect_sfx() -> void:
+	if _ore_collect_player == null or _ore_collect_stream == null:
+		return
+	_ore_collect_player.stop()
+	_ore_collect_player.stream = _ore_collect_stream
+	_ore_collect_player.volume_db = ore_collect_volume_db
+	_ore_collect_player.play()
+
+
+func _build_ore_collect_stream() -> AudioStreamWAV:
+	var sample_rate: int = 44100
+	var duration_sec: float = 0.34
+	var sample_count: int = int(duration_sec * float(sample_rate))
+	var pcm := PackedByteArray()
+	pcm.resize(sample_count * 2)
+	var two_pi: float = PI * 2.0
+	var crack_phase: float = 0.0
+	for i in range(sample_count):
+		var t: float = float(i) / float(max(1, sample_count - 1))
+		var env: float = pow(1.0 - t, 1.35)
+		if i < int(sample_rate * 0.045):
+			env *= float(i) / float(max(1, int(sample_rate * 0.045)))
+		_drive_rumble_noise_u = (_drive_rumble_noise_u * 1103515245 + 12345) & 0x7FFFFFFF
+		var dirt: float = float(_drive_rumble_noise_u & 0xFFFF) / float(0xFFFF) * 2.0 - 1.0
+		var thump: float = sin(two_pi * 72.0 * float(i) / float(sample_rate)) * exp(-t * 9.5) * 0.38
+		var grind: float = dirt * exp(-t * 14.0) * 0.42
+		crack_phase += two_pi * lerpf(420.0, 140.0, t) / float(sample_rate)
+		var crack: float = sin(crack_phase) * exp(-t * 11.0) * 0.22
+		var clink_env: float = exp(-maxf(0.0, t - 0.07) * 38.0)
+		var clink: float = sin(two_pi * 2100.0 * float(i) / float(sample_rate)) * clink_env * 0.11
+		clink += sin(two_pi * 3150.0 * float(i) / float(sample_rate) + 0.6) * clink_env * 0.06
+		var sample: float = (thump + grind + crack + clink) * env
+		var sample_i16: int = int(clampf(sample, -1.0, 1.0) * 32000.0)
+		pcm[i * 2] = sample_i16 & 0xFF
+		pcm[i * 2 + 1] = (sample_i16 >> 8) & 0xFF
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
+	stream.data = pcm
+	return stream
+
+
 func _find_nearest_ore() -> void:
 	_nearest_ore = null
 	_nearest_ore_dist = INF
@@ -868,6 +997,7 @@ func _handle_mining_input() -> void:
 	var logger := get_node_or_null("/root/TestLogger")
 	if logger != null:
 		logger.log_event("ore_collected", "value=%d total=%d distance=%.2f" % [gained, _ore_collected, collected_distance])
+	_play_ore_collect_sfx()
 
 
 func _update_gameplay_ui(forward_speed: float) -> void:
@@ -985,6 +1115,7 @@ func _update_auto_drill(delta: float) -> void:
 	var logger := get_node_or_null("/root/TestLogger")
 	if logger != null:
 		logger.log_event("ore_auto_collected", "value=%d total=%d" % [gained, _ore_collected])
+	_play_ore_collect_sfx()
 
 
 func _update_hint_timers(delta: float) -> void:
