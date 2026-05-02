@@ -1,12 +1,12 @@
 extends Control
 
-@onready var _variant_name_label: Label = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/VariantName
+@onready var _variant_name_label: RichTextLabel = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/VariantInfoRow/VariantName
 @onready var _chassis_buttons: Array[Button] = [
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card0/ChassisButton0,
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card1/ChassisButton1,
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card2/ChassisButton2
 ]
-@onready var _color_option: OptionButton = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/ColorOption
+@onready var _color_option: OptionButton = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ColorRow/ColorOption
 @onready var _slot_buttons: Array[Button] = [
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton0,
 	$MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton1,
@@ -16,12 +16,36 @@ extends Control
 @onready var _slot_upgrade_option: OptionButton = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow/SlotUpgradeOption
 @onready var _selected_slot_label: Label = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow/SelectedSlotLabel
 @onready var _upgrade_effects: RichTextLabel = $MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/UpgradeEffects
-@onready var _stats_summary: Label = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/StatsSummary
-@onready var _speed_bar: ProgressBar = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/SpeedBar
-@onready var _drive_bar: ProgressBar = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/DriveBar
-@onready var _turn_bar: ProgressBar = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/TurnBar
-@onready var _fuel_bar: ProgressBar = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/FuelBar
-@onready var _power_bar: ProgressBar = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/PowerBar
+@onready var _stat_labels: Array[Label] = [
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/MassRow/MassLabel,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/TopSpeedRow/TopSpeedLabel,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AccelerationRow/AccelerationLabel,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/GroundHandlingRow/GroundHandlingLabel,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AerialHandlingRow/AerialHandlingLabel,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterPowerRow/ThrusterPowerLabel,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterFuelRow/ThrusterFuelLabel,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/BatteryCapacityRow/BatteryCapacityLabel
+]
+@onready var _stat_bars: Array[ProgressBar] = [
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/MassRow/MassBar,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/TopSpeedRow/TopSpeedBar,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AccelerationRow/AccelerationBar,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/GroundHandlingRow/GroundHandlingBar,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AerialHandlingRow/AerialHandlingBar,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterPowerRow/ThrusterPowerBar,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterFuelRow/ThrusterFuelBar,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/BatteryCapacityRow/BatteryCapacityBar
+]
+@onready var _stat_bar_texts: Array[Label] = [
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/MassRow/MassBar/MassBarText,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/TopSpeedRow/TopSpeedBar/TopSpeedBarText,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AccelerationRow/AccelerationBar/AccelerationBarText,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/GroundHandlingRow/GroundHandlingBar/GroundHandlingBarText,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AerialHandlingRow/AerialHandlingBar/AerialHandlingBarText,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterPowerRow/ThrusterPowerBar/ThrusterPowerBarText,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterFuelRow/ThrusterFuelBar/ThrusterFuelBarText,
+	$MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/BatteryCapacityRow/BatteryCapacityBar/BatteryCapacityBarText
+]
 @onready var _preview_root: Node3D = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot
 @onready var _preview_camera: Camera3D = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot/PreviewCamera
 @onready var _back_button: Button = $MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/BackButton
@@ -33,6 +57,12 @@ var _ui_sfx_player: AudioStreamPlayer
 var _chassis_click_stream: AudioStreamWAV
 var _slot_click_stream: AudioStreamWAV
 var _ui_hover_stream: AudioStreamWAV
+
+const CHASSIS_SHORT_DESCRIPTIONS: PackedStringArray = [
+	"Has a frail, but lightweight frame. Agile and highly modular.",
+	"Well-balanced, with no particular strengths or weaknesses.",
+	"A heavy-duty build with high base stats, but few Component slots."
+]
 
 
 func _ready() -> void:
@@ -106,7 +136,10 @@ func _on_chassis_card_pressed(index: int) -> void:
 		return
 	_play_ui_sfx(_chassis_click_stream)
 	state.selected_chassis_index = index
-	_variant_name_label.text = "Chassis: %s" % state.CHASSIS_NAMES[state.selected_chassis_index]
+	_variant_name_label.text = "[b]Selected Chassis: %s[/b] - %s" % [
+		_get_chassis_display_name(state.CHASSIS_NAMES[state.selected_chassis_index]),
+		CHASSIS_SHORT_DESCRIPTIONS[clampi(state.selected_chassis_index, 0, CHASSIS_SHORT_DESCRIPTIONS.size() - 1)]
+	]
 	_refresh_all_ui()
 	_apply_selection_to_rover(_preview_rover)
 
@@ -142,7 +175,10 @@ func _refresh_chassis_buttons() -> void:
 	var state := get_node_or_null("/root/GameState")
 	if state == null:
 		return
-	_variant_name_label.text = "Chassis: %s" % state.CHASSIS_NAMES[state.selected_chassis_index]
+	_variant_name_label.text = "[b]Selected Chassis: %s[/b] - %s" % [
+		_get_chassis_display_name(state.CHASSIS_NAMES[state.selected_chassis_index]),
+		CHASSIS_SHORT_DESCRIPTIONS[clampi(state.selected_chassis_index, 0, CHASSIS_SHORT_DESCRIPTIONS.size() - 1)]
+	]
 	for i in range(_chassis_buttons.size()):
 		_chassis_buttons[i].self_modulate = Color(0.72, 1.0, 1.0, 1.0) if i == state.selected_chassis_index else Color(1, 1, 1, 1)
 
@@ -168,17 +204,24 @@ func _refresh_stats() -> void:
 	if state == null:
 		return
 	var stats: Dictionary = state.get_final_rover_stats()
-	_speed_bar.value = clampf(float(stats.get("max_drive_speed", 0.0)) / 40.0, 0.0, 1.0)
-	_drive_bar.value = clampf(float(stats.get("drive_force", 0.0)) / 1000.0, 0.0, 1.0)
-	_turn_bar.value = clampf(float(stats.get("turn_torque", 0.0)) / 150.0, 0.0, 1.0)
-	_fuel_bar.value = clampf(float(stats.get("thruster_fuel_capacity", 0.0)) / 220.0, 0.0, 1.0)
-	_power_bar.value = clampf(float(stats.get("battery_max_power", 0.0)) / 220.0, 0.0, 1.0)
-	_stats_summary.text = "Mass %.1f | Air %.0f | Fuel %.0f | Power %.0f" % [
-		float(stats.get("mass", 0.0)),
-		float(stats.get("air_torque", 0.0)),
-		float(stats.get("thruster_fuel_capacity", 0.0)),
-		float(stats.get("battery_max_power", 0.0))
+	var stat_defs: Array[Dictionary] = [
+		{"label":"Mass", "key":"mass", "maxv":19.0},
+		{"label":"Top Speed", "key":"max_drive_speed", "maxv":55.0},
+		{"label":"Acceleration", "key":"drive_force", "maxv":1620.0},
+		{"label":"Ground Handling", "key":"turn_torque", "maxv":204.0},
+		{"label":"Aerial Handling", "key":"air_torque", "maxv":130.0},
+		{"label":"Thruster Power", "key":"thruster_sustain_force", "maxv":600.0},
+		{"label":"Thruster Fuel", "key":"thruster_fuel_capacity", "maxv":235.0},
+		{"label":"Battery Capacity", "key":"battery_max_power", "maxv":275.0}
 	]
+	for i in range(min(_stat_labels.size(), _stat_bars.size(), stat_defs.size())):
+		var def: Dictionary = stat_defs[i]
+		var v: float = float(stats.get(def["key"], 0.0))
+		var display_text: String = "%s: %.1f" % [str(def["label"]), v]
+		_stat_labels[i].text = display_text
+		if i < _stat_bar_texts.size():
+			_stat_bar_texts[i].text = display_text
+		_stat_bars[i].value = clampf(v / maxf(float(def["maxv"]), 0.01), 0.0, 1.0)
 
 
 func _refresh_upgrade_effects() -> void:
@@ -327,3 +370,7 @@ func _build_sci_fi_click_stream(start_freq: float, end_freq: float, duration_sec
 	stream.loop_mode = AudioStreamWAV.LOOP_DISABLED
 	stream.data = pcm
 	return stream
+
+
+func _get_chassis_display_name(raw_name: String) -> String:
+	return raw_name.trim_suffix(" Chassis")

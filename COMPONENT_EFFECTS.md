@@ -44,20 +44,20 @@ These values come from `CHASSIS_DATA.base_stats` in `scripts/game_state.gd`.
 
 | Stat Key | Scout Chassis | Expedition Chassis | Juggernaut Chassis |
 |---|---:|---:|---:|
-| `mass` | 7.0 | 8.8 | 12.0 |
-| `drive_force` | 820.0 | 760.0 | 690.0 |
-| `max_drive_speed` | 31.0 | 28.0 | 24.0 |
-| `turn_torque` | 108.0 | 95.0 | 82.0 |
-| `air_torque` | 58.0 | 52.0 | 44.0 |
-| `thruster_fuel_capacity` | 95.0 | 110.0 | 145.0 |
-| `thruster_initial_impulse_force` | 480.0 | 510.0 | 560.0 |
-| `thruster_sustain_force` | 320.0 | 340.0 | 370.0 |
-| `thruster_initial_burst_cost` | 24.0 | 28.0 | 30.0 |
-| `thruster_burn_rate` | 44.0 | 48.0 | 52.0 |
-| `battery_max_power` | 115.0 | 130.0 | 145.0 |
-| `power_regen_rate` | 4.5 | 4.0 | 3.4 |
-| `drive_power_drain` | 3.0 | 3.4 | 3.9 |
-| `thruster_power_drain_mult` | 1.25 | 1.35 | 1.45 |
+| `mass` | 7.0 | 9.4 | 13.4 |
+| `drive_force` | 820.0 | 810.0 | 770.0 |
+| `max_drive_speed` | 31.0 | 30.0 | 27.0 |
+| `turn_torque` | 108.0 | 100.0 | 90.0 |
+| `air_torque` | 58.0 | 55.0 | 50.0 |
+| `thruster_fuel_capacity` | 95.0 | 120.0 | 160.0 |
+| `thruster_initial_impulse_force` | 480.0 | 545.0 | 630.0 |
+| `thruster_sustain_force` | 320.0 | 360.0 | 415.0 |
+| `thruster_initial_burst_cost` | 24.0 | 30.0 | 34.0 |
+| `thruster_burn_rate` | 44.0 | 50.0 | 55.0 |
+| `battery_max_power` | 115.0 | 140.0 | 160.0 |
+| `power_regen_rate` | 4.5 | 4.3 | 3.8 |
+| `drive_power_drain` | 3.0 | 3.6 | 4.4 |
+| `thruster_power_drain_mult` | 1.25 | 1.45 | 1.6 |
 | `mining_power_cost` | 6.0 | 6.0 | 7.0 |
 | `weapon_power_cost` | 0.0 | 0.0 | 0.0 |
 
@@ -187,9 +187,10 @@ These defaults come from rover runtime exports in `scripts/rover_controller.gd` 
   - `drive_force`: `+200.0`
   - `max_drive_speed`: `+6.0`
   - `thruster_burn_rate`: `+5.0`
+  - `drive_power_drain`: `+1.0`
 - **Practical impact:**
   - Major ground mobility increase (accel + top speed).
-  - Slightly heavier and increases thruster fuel burn pressure.
+  - Increases ground and air speed, but also fuel and energy usage.
 
 ### Steering Wheel
 

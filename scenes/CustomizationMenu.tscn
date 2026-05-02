@@ -1,13 +1,39 @@
-[gd_scene load_steps=4 format=3 uid="uid://cm2cxhpk2b2d3"]
+[gd_scene load_steps=7 format=3 uid="uid://cm2cxhpk2b2d3"]
 
 [ext_resource type="Script" path="res://scripts/customization_menu.gd" id="1_custom"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 bg_color = Color(0.08, 0.1, 0.14, 0.94)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
+bg_color = Color(0.22, 0.24, 0.29, 0.98)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.38, 0.46, 0.95)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
 corner_radius_top_left = 12
 corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat_bg"]
+bg_color = Color(0.12, 0.13, 0.17, 0.98)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_stat_fill"]
+bg_color = Color(0.3, 0.37, 0.52, 0.98)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
 
 [sub_resource type="Environment" id="Environment_v0x8w"]
 background_mode = 0
@@ -63,11 +89,12 @@ grow_vertical = 2
 
 [node name="RootVBox" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 4
 
 [node name="TopRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.9
 theme_override_constants/separation = 18
 
 [node name="RoversSection" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow"]
@@ -80,14 +107,32 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Mission Preparation"
 
-[node name="RoversLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
+[node name="ChassisInfoRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
 layout_mode = 2
-text = "Select Chassis"
+theme_override_constants/separation = 8
+visible = false
 
-[node name="VariantName" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
+[node name="RoversLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisInfoRow"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "Chassis: Expedition Chassis"
+text = "Selected Chassis"
+
+[node name="VariantInfoRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="VariantName" type="RichTextLabel" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/VariantInfoRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 28)
+size_flags_horizontal = 3
+bbcode_enabled = true
+fit_content = true
+text = "[b]Selected Chassis: Expedition Chassis[/b] - Balanced all-round mission platform."
+
+[node name="ChassisDescription" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/VariantInfoRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "- Balanced all-round mission platform."
+visible = false
 
 [node name="ChassisCards" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
 layout_mode = 2
@@ -100,12 +145,14 @@ size_flags_horizontal = 3
 [node name="ChassisButton0" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card0"]
 custom_minimum_size = Vector2(120, 72)
 layout_mode = 2
-text = "ROVER ICON"
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Scout"
 
 [node name="ChassisName0" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card0"]
 layout_mode = 2
 text = "Scout"
 horizontal_alignment = 1
+visible = false
 
 [node name="Card1" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards"]
 layout_mode = 2
@@ -114,12 +161,14 @@ size_flags_horizontal = 3
 [node name="ChassisButton1" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card1"]
 custom_minimum_size = Vector2(120, 72)
 layout_mode = 2
-text = "ROVER ICON"
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Expedition"
 
 [node name="ChassisName1" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card1"]
 layout_mode = 2
 text = "Expedition"
 horizontal_alignment = 1
+visible = false
 
 [node name="Card2" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards"]
 layout_mode = 2
@@ -128,50 +177,56 @@ size_flags_horizontal = 3
 [node name="ChassisButton2" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card2"]
 custom_minimum_size = Vector2(120, 72)
 layout_mode = 2
-text = "ROVER ICON"
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Juggernaut"
 
 [node name="ChassisName2" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card2"]
 layout_mode = 2
 text = "Juggernaut"
 horizontal_alignment = 1
+visible = false
 
 [node name="UpgradeSection" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow"]
-custom_minimum_size = Vector2(320, 0)
+custom_minimum_size = Vector2(768, 0)
 layout_mode = 2
 theme_override_constants/separation = 8
 
 [node name="UpgradeHeader" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
-text = "Upgrade Slots"
+text = "Upgrade Components"
 
 [node name="UpgradeHint" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
-text = "Click slot, then choose component"
+text = "Click a slot, then choose a Component for it"
 
 [node name="SlotButtonsGrid" type="GridContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 layout_mode = 2
-columns = 2
+columns = 4
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 
 [node name="SlotButton0" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
 custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
 text = "Slot 1"
 
 [node name="SlotButton1" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
 custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
 text = "Slot 2"
 
 [node name="SlotButton2" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
 custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
 text = "Slot 3"
 
 [node name="SlotButton3" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid"]
 custom_minimum_size = Vector2(140, 72)
 layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
 text = "Slot 4"
 
 [node name="SlotPickerRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
@@ -185,6 +240,10 @@ text = "Slot 1"
 [node name="SlotUpgradeOption" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button")
 
 [node name="UpgradeEffects" type="RichTextLabel" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection"]
 custom_minimum_size = Vector2(0, 120)
@@ -193,55 +252,269 @@ bbcode_enabled = true
 fit_content = true
 text = "Upgrade effects..."
 
+[node name="ColorRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ColorLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ColorRow"]
+layout_mode = 2
+text = "Rover Color"
+
+[node name="ColorOption" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ColorRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button")
+
 [node name="BottomRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_stretch_ratio = 1.55
 theme_override_constants/separation = 18
 
 [node name="StatsSection" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow"]
-custom_minimum_size = Vector2(300, 0)
+custom_minimum_size = Vector2(450, 360)
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="StatsTitle" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
 layout_mode = 2
 text = "Rover Stats"
 
-[node name="SpeedBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
-custom_minimum_size = Vector2(0, 26)
+[node name="MassRow" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
 layout_mode = 2
+
+[node name="MassLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/MassRow"]
+layout_mode = 2
+text = "Mass: 0.0"
+visible = false
+
+[node name="MassBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/MassRow"]
+custom_minimum_size = Vector2(0, 27)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_stat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stat_fill")
 max_value = 1.0
 value = 0.5
 
-[node name="DriveBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
-custom_minimum_size = Vector2(0, 26)
+[node name="MassBarText" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/MassRow/MassBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+text = "Mass: 0.0"
+
+[node name="TopSpeedRow" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
 layout_mode = 2
+
+[node name="TopSpeedLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/TopSpeedRow"]
+layout_mode = 2
+text = "Top Speed: 0.0"
+visible = false
+
+[node name="TopSpeedBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/TopSpeedRow"]
+custom_minimum_size = Vector2(0, 27)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_stat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stat_fill")
 max_value = 1.0
 value = 0.5
 
-[node name="TurnBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
-custom_minimum_size = Vector2(0, 26)
+[node name="TopSpeedBarText" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/TopSpeedRow/TopSpeedBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+text = "Top Speed: 0.0"
+
+[node name="AccelerationRow" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
 layout_mode = 2
+
+[node name="AccelerationLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AccelerationRow"]
+layout_mode = 2
+text = "Acceleration: 0.0"
+visible = false
+
+[node name="AccelerationBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AccelerationRow"]
+custom_minimum_size = Vector2(0, 27)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_stat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stat_fill")
 max_value = 1.0
 value = 0.5
 
-[node name="FuelBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
-custom_minimum_size = Vector2(0, 26)
+[node name="AccelerationBarText" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AccelerationRow/AccelerationBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+text = "Acceleration: 0.0"
+
+[node name="GroundHandlingRow" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
 layout_mode = 2
+
+[node name="GroundHandlingLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/GroundHandlingRow"]
+layout_mode = 2
+text = "Ground Handling: 0.0"
+visible = false
+
+[node name="GroundHandlingBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/GroundHandlingRow"]
+custom_minimum_size = Vector2(0, 27)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_stat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stat_fill")
 max_value = 1.0
 value = 0.5
 
-[node name="PowerBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
-custom_minimum_size = Vector2(0, 26)
+[node name="GroundHandlingBarText" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/GroundHandlingRow/GroundHandlingBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+text = "Ground Handling: 0.0"
+
+[node name="AerialHandlingRow" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
 layout_mode = 2
+
+[node name="AerialHandlingLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AerialHandlingRow"]
+layout_mode = 2
+text = "Aerial Handling: 0.0"
+visible = false
+
+[node name="AerialHandlingBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AerialHandlingRow"]
+custom_minimum_size = Vector2(0, 27)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_stat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stat_fill")
 max_value = 1.0
 value = 0.5
 
-[node name="StatsSummary" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+[node name="AerialHandlingBarText" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/AerialHandlingRow/AerialHandlingBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+text = "Aerial Handling: 0.0"
+
+[node name="ThrusterPowerRow" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
 layout_mode = 2
-autowrap_mode = 2
-text = "Stats summary"
+
+[node name="ThrusterPowerLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterPowerRow"]
+layout_mode = 2
+text = "Thruster Power: 0.0"
+visible = false
+
+[node name="ThrusterPowerBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterPowerRow"]
+custom_minimum_size = Vector2(0, 27)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_stat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stat_fill")
+max_value = 1.0
+value = 0.5
+
+[node name="ThrusterPowerBarText" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterPowerRow/ThrusterPowerBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+text = "Thruster Power: 0.0"
+
+[node name="ThrusterFuelRow" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+layout_mode = 2
+
+[node name="ThrusterFuelLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterFuelRow"]
+layout_mode = 2
+text = "Thruster Fuel: 0.0"
+visible = false
+
+[node name="ThrusterFuelBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterFuelRow"]
+custom_minimum_size = Vector2(0, 27)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_stat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stat_fill")
+max_value = 1.0
+value = 0.5
+
+[node name="ThrusterFuelBarText" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/ThrusterFuelRow/ThrusterFuelBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+text = "Thruster Fuel: 0.0"
+
+[node name="BatteryCapacityRow" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection"]
+layout_mode = 2
+
+[node name="BatteryCapacityLabel" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/BatteryCapacityRow"]
+layout_mode = 2
+text = "Battery Capacity: 0.0"
+visible = false
+
+[node name="BatteryCapacityBar" type="ProgressBar" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/BatteryCapacityRow"]
+custom_minimum_size = Vector2(0, 27)
+layout_mode = 2
+show_percentage = false
+theme_override_styles/background = SubResource("StyleBoxFlat_stat_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_stat_fill")
+max_value = 1.0
+value = 0.5
+
+[node name="BatteryCapacityBarText" type="Label" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/StatsSection/BatteryCapacityRow/BatteryCapacityBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 0
+vertical_alignment = 1
+text = "Battery Capacity: 0.0"
 
 [node name="PreviewSection" type="VBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow"]
 layout_mode = 2
@@ -250,7 +523,7 @@ size_flags_vertical = 3
 theme_override_constants/separation = 10
 
 [node name="PreviewContainer" type="PanelContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection"]
-custom_minimum_size = Vector2(520, 300)
+custom_minimum_size = Vector2(430, 390)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -282,7 +555,7 @@ light_energy = 0.65
 omni_range = 12.0
 
 [node name="PreviewCamera" type="Camera3D" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/PreviewContainer/SubViewportContainer/SubViewport/PreviewRoot"]
-transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 2.8, 8.6)
+transform = Transform3D(1, 0, 0, 0, 0.939693, 0.34202, 0, -0.34202, 0.939693, 0, 1.12, 3.44)
 current = true
 
 [node name="ControlRow" type="HBoxContainer" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection"]
@@ -290,17 +563,17 @@ layout_mode = 2
 theme_override_constants/separation = 10
 
 [node name="BackButton" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow"]
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Back"
-
-[node name="ColorOption" type="OptionButton" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow"]
-layout_mode = 2
-size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+text = "Back to Briefing"
 
 [node name="StartButton" type="Button" parent="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow"]
+custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
 text = "Start Mission"
 
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ChassisCards/Card0/ChassisButton0" to="." method="_on_chassis_card_pressed" binds= [0]]
@@ -311,6 +584,6 @@ text = "Start Mission"
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton2" to="." method="_on_slot_button_pressed" binds= [2]]
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotButtonsGrid/SlotButton3" to="." method="_on_slot_button_pressed" binds= [3]]
 [connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/UpgradeSection/SlotPickerRow/SlotUpgradeOption" to="." method="_on_slot_upgrade_option_selected"]
-[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/ColorOption" to="." method="_on_color_option_item_selected"]
+[connection signal="item_selected" from="MarginContainer/Panel/RootMargin/RootVBox/TopRow/RoversSection/ColorRow/ColorOption" to="." method="_on_color_option_item_selected"]
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/BackButton" to="." method="_on_back_button_pressed"]
 [connection signal="pressed" from="MarginContainer/Panel/RootMargin/RootVBox/BottomRow/PreviewSection/ControlRow/StartButton" to="." method="_on_start_button_pressed"]
